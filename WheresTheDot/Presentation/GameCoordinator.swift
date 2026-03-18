@@ -15,12 +15,24 @@ final class GameCoordinator: ObservableObject {
     @Published var score: Int = 0
     @Published var message: String = ""
 
+    // Arcade-specific state
+    @Published var currentLevel: Int = 1
+    @Published var showLevelUp: Bool = false
+    @Published var timeLimitForRound: TimeInterval? = nil
+
+    let mode: GameMode
     let start: StartGameUseCase
     private let addIfCorrect: AddDotIfCorrectUseCase
+    private let progression: LevelProgression?
 
-    init(start: StartGameUseCase, addIfCorrect: AddDotIfCorrectUseCase) {
+    init(mode: GameMode = .classic,
+         start: StartGameUseCase,
+         addIfCorrect: AddDotIfCorrectUseCase,
+         progression: LevelProgression? = nil) {
+        self.mode = mode
         self.start = start
         self.addIfCorrect = addIfCorrect
+        self.progression = progression
     }
 
     func startGame(in area: CGRect) -> Round {
@@ -28,6 +40,11 @@ final class GameCoordinator: ObservableObject {
         roundIndex = round.index
         score = round.dots.count
         message = ""
+        currentLevel = 1
+        showLevelUp = false
+        if let p = progression {
+            timeLimitForRound = p.difficulty(for: 1).timeLimit
+        }
         return round
     }
 
@@ -35,12 +52,24 @@ final class GameCoordinator: ObservableObject {
         let outcome = addIfCorrect(tapped: id, in: area)
         switch outcome {
         case .correct(let nextRound):
+            let newScore = nextRound.dots.count
             roundIndex = nextRound.index
-            score = nextRound.dots.count
+            score = newScore
             message = ""
+
+            if let p = progression {
+                let newLevel = p.state(forScore: newScore).level
+                timeLimitForRound = p.difficulty(for: newLevel).timeLimit
+                if newLevel > currentLevel {
+                    currentLevel = newLevel
+                    showLevelUp = true
+                }
+            }
+
         case .wrong(let gameOverScore, _):
             score = gameOverScore
             message = "Game Over"
+            timeLimitForRound = nil
         }
         return outcome
     }

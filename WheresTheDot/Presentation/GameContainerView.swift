@@ -10,7 +10,6 @@ import SpriteKit
 
 struct GameContainerView: View {
     @EnvironmentObject private var appState: AppState
-    @EnvironmentObject private var container: AppContainer
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = false
 
     let mode: GameMode
@@ -18,6 +17,9 @@ struct GameContainerView: View {
     @StateObject private var coordinator: GameCoordinator
     @State private var scene: GameScene?
     @State private var onboardingStep: Int? = nil
+
+    // Arcade timer bar
+    @State private var timerBarStart: Date? = nil
 
     private var onboardingText: LocalizedStringResource? {
         switch onboardingStep {
@@ -41,9 +43,15 @@ struct GameContainerView: View {
         }
     }
 
-    init(mode: GameMode, coordinator: @autoclosure @escaping () -> GameCoordinator) {
+    init(mode: GameMode) {
         self.mode = mode
-        _coordinator = StateObject(wrappedValue: coordinator())
+        let container = AppContainer(mode: mode)
+        _coordinator = StateObject(wrappedValue: GameCoordinator(
+            mode: mode,
+            start: container.startGame,
+            addIfCorrect: container.addDotIfCorrect,
+            progression: container.progression
+        ))
     }
 
     var body: some View {
@@ -60,10 +68,22 @@ struct GameContainerView: View {
                     .task { setup() }
             }
 
+            // Arcade timer bar — full-width strip at very top
+            if mode == .arcade, timerBarStart != nil {
+                arcadeTimerBar
+                    .allowsHitTesting(false)
+            }
+
             hudDisplay
                 .allowsHitTesting(false)
 
             topControls
+
+            // Level-up overlay (arcade only)
+            if coordinator.showLevelUp {
+                levelUpOverlay
+                    .transition(.opacity.combined(with: .scale(scale: 1.05, anchor: .center)))
+            }
 
             // Game Over overlay (separate layer, animated)
             if coordinator.message == "Game Over" || coordinator.message == "Time's up!" {
@@ -77,6 +97,7 @@ struct GameContainerView: View {
             }
         }
         .animation(.spring(response: 0.38, dampingFraction: 0.85), value: coordinator.message)
+        .animation(.easeInOut(duration: 0.25), value: coordinator.showLevelUp)
         .onAppear {
             guard appState.soundEnabled else { return }
             AudioManager.shared.startBackgroundMusic(filename: "gLoop2", ext: "wav")
@@ -96,6 +117,75 @@ struct GameContainerView: View {
 
 private extension GameContainerView {
 
+    // MARK: - Arcade timer bar
+
+    private var arcadeTimerBar: some View {
+        VStack {
+            TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { context in
+                let progress = arcadeTimerProgress(at: context.date)
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Rectangle()
+                            .fill(Color.white.opacity(0.08))
+                        Rectangle()
+                            .fill(timerBarColor(progress))
+                            .frame(width: geo.size.width * progress)
+                            .shadow(color: timerBarColor(progress).opacity(0.8), radius: 6, y: 0)
+                    }
+                }
+                .frame(height: 4)
+            }
+            Spacer()
+        }
+        .ignoresSafeArea(edges: .top)
+    }
+
+    private func arcadeTimerProgress(at date: Date) -> CGFloat {
+        guard let start = timerBarStart,
+              let limit = coordinator.timeLimitForRound,
+              limit > 0 else { return 1.0 }
+        let elapsed = date.timeIntervalSince(start)
+        return max(0, CGFloat(1.0 - elapsed / limit))
+    }
+
+    private func timerBarColor(_ progress: CGFloat) -> Color {
+        if progress > 0.5 { return .neonCyan }
+        if progress > 0.25 { return .neonOrange }
+        return .dottoDanger
+    }
+
+    // MARK: - Level-up overlay (Atari-style)
+
+    private var levelUpLevelColor: Color {
+        let colors: [Color] = [.neonCyan, .neonPink, .neonPurple, .neonLime, .neonOrange]
+        return colors[(coordinator.currentLevel - 1) % colors.count]
+    }
+
+    private var levelUpOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.88)
+                .ignoresSafeArea()
+
+            VStack(spacing: 6) {
+                Text("- LEVEL -")
+                    .font(.system(size: 13, weight: .bold, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.5))
+                    .kerning(8)
+
+                Text("\(coordinator.currentLevel)")
+                    .font(.system(size: 110, weight: .black, design: .monospaced))
+                    .foregroundStyle(levelUpLevelColor)
+                    .shadow(color: levelUpLevelColor.opacity(0.9), radius: 30)
+                    .shadow(color: levelUpLevelColor.opacity(0.5), radius: 70)
+
+                Text("ADVANCED!")
+                    .font(.system(size: 13, weight: .bold, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.5))
+                    .kerning(5)
+            }
+        }
+    }
+
     // MARK: - HUD
 
     @MainActor
@@ -106,11 +196,21 @@ private extension GameContainerView {
 
         scene.cancelRoundTimer()
         scene.clearOverlays()
+        timerBarStart = nil
 
         let firstRound = coordinator.startGame(in: area)
         scene.render(round: firstRound)
         scene.setInputEnabled(true)
         coordinator.message = ""
+
+        if mode == .arcade, let limit = coordinator.timeLimitForRound {
+            timerBarStart = Date()
+            scene.startRoundTimer(seconds: limit) {
+                coordinator.message = "Time's up!"
+                scene.setInputEnabled(false)
+                timerBarStart = nil
+            }
+        }
     }
 
     // MARK: - Sub-views
@@ -120,13 +220,11 @@ private extension GameContainerView {
             HStack {
                 Spacer()
 
-                VStack(alignment: .trailing) {
-                    Text("Round \(coordinator.roundIndex)")
-                    Text("Score \(coordinator.score)")
+                if mode == .arcade {
+                    arcadeHUD
+                } else {
+                    classicHUD
                 }
-                .padding(10)
-                .background(.thinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
             }
 
             Spacer()
@@ -143,6 +241,33 @@ private extension GameContainerView {
             }
         }
         .padding()
+    }
+
+    private var classicHUD: some View {
+        VStack(alignment: .trailing) {
+            Text("Round \(coordinator.roundIndex)")
+            Text("Score \(coordinator.score)")
+        }
+        .padding(10)
+        .background(.thinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private var arcadeHUD: some View {
+        VStack(alignment: .trailing, spacing: 2) {
+            Text("LVL \(coordinator.currentLevel)")
+                .font(.system(size: 18, weight: .black, design: .monospaced))
+                .foregroundStyle(levelUpLevelColor)
+                .shadow(color: levelUpLevelColor.opacity(0.7), radius: 6)
+            Text("SCORE  \(coordinator.score)")
+                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                .foregroundStyle(.white.opacity(0.75))
+                .kerning(1)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 
     /// Close button (and optional Skip) pinned to the top-left.
@@ -191,6 +316,13 @@ private extension GameContainerView {
 
                 // Score block
                 VStack(spacing: 6) {
+                    if mode == .arcade {
+                        Text("LVL \(coordinator.currentLevel)")
+                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                            .foregroundStyle(levelUpLevelColor.opacity(0.8))
+                            .kerning(3)
+                    }
+
                     Text("SCORE")
                         .font(.system(.caption, design: .rounded).weight(.bold))
                         .foregroundStyle(.white.opacity(0.45))
@@ -255,13 +387,6 @@ private extension GameContainerView {
         }
     }
 
-    func timeLimit(for score: Int) -> TimeInterval {
-        if score <= 6 { return 3.0 }
-        if score <= 12 { return 2.0 }
-        if score <= 18 { return 1.4 }
-        return 1.0
-    }
-
     // MARK: - Setup
 
     @MainActor
@@ -271,17 +396,24 @@ private extension GameContainerView {
         }
         let coordinator = self.coordinator
 
-        // 2) Create SpriteKit scene
+        // Create SpriteKit scene
         let scene = GameScene(size: .zero)
         scene.scaleMode = .resizeFill
 
-        // Helper: compute playable area (avoid top HUD + safe-ish margins)
         func playableRect(for sceneSize: CGSize) -> CGRect {
             CGRect(origin: .zero, size: sceneSize)
                 .insetBy(dx: 30, dy: 120)
         }
 
-        // 3) Scene is ready (has a non-zero size) -> start game
+        func startArcadeTimer(limit: TimeInterval) {
+            timerBarStart = Date()
+            scene.startRoundTimer(seconds: limit) {
+                coordinator.message = "Time's up!"
+                scene.setInputEnabled(false)
+                timerBarStart = nil
+            }
+        }
+
         scene.onSceneReady = { size in
             let area = playableRect(for: size)
 
@@ -300,14 +432,11 @@ private extension GameContainerView {
                 if shouldPulseNewDot(forScore: firstRound.dots.count) {
                     scene.pulseDot(id: firstRound.newDotID)
                 }
-            }
 
-//            scene.startRoundTimer(seconds: timeLimit(for: firstRound.dots.count)) {
-//                // timeout -> game over (treat as wrong)
-//                coordinator.message = "Time's up!"
-//                scene.setInputEnabled(false)
-//                // optional: highlight correct dot if you have it
-//            }
+                if mode == .arcade, let limit = coordinator.timeLimitForRound {
+                    startArcadeTimer(limit: limit)
+                }
+            }
         }
 
         if appState.hapticsEnabled {
@@ -319,7 +448,7 @@ private extension GameContainerView {
             Haptics.tap()
         }
 
-        // 4) Handle taps
+        // Handle taps
         scene.onDotTapped = { tappedID in
             if onboardingStep != nil {
                 handleOnboardingTap(tappedID, scene: scene, playableRect: playableRect, coordinator: coordinator)
@@ -327,6 +456,8 @@ private extension GameContainerView {
             }
 
             scene.setInputEnabled(false)
+            scene.cancelRoundTimer()
+            timerBarStart = nil
 
             let area = playableRect(for: scene.size)
             let outcome = coordinator.handleTap(tappedID, in: area)
@@ -337,7 +468,7 @@ private extension GameContainerView {
                 let score = nextRound.dots.count
 
                 let coverDuration: TimeInterval = {
-                    if score <= 5 { return 0.45 }
+                    if score <= 5  { return 0.45 }
                     if score <= 12 { return 0.65 }
                     return 0.65
                 }()
@@ -350,18 +481,28 @@ private extension GameContainerView {
 
                     scene.render(round: nextRound)
                     if let newNode = scene.dotNode(id: nextRound.newDotID) {
-                        let color = UIColor.neonCyan
-                        scene.spawnCorrectBurst(at: newNode.position, color: color)
+                        let colors: [UIColor] = [.neonCyan, .neonPink, .neonPurple, .neonLime, .neonOrange]
+                        let burstColor = colors[(max(1, score) - 1) % colors.count]
+                        scene.spawnCorrectBurst(at: newNode.position, color: burstColor)
                     }
+
+                    // Level-up: flash the scene and wait for banner
+                    if coordinator.showLevelUp {
+                        let levelColors: [UIColor] = [.neonCyan, .neonPink, .neonPurple, .neonLime, .neonOrange]
+                        let levelColor = levelColors[(coordinator.currentLevel - 1) % levelColors.count]
+                        scene.flashLevelUp(color: levelColor)
+                        try? await Task.sleep(nanoseconds: 1_800_000_000)
+                        coordinator.showLevelUp = false
+                    }
+
                     if shouldPulseNewDot(forScore: nextRound.dots.count) {
                         scene.pulseDot(id: nextRound.newDotID)
                     }
                     scene.setInputEnabled(true)
 
-//                    scene.startRoundTimer(seconds: timeLimit(for: nextRound.dots.count)) {
-//                        coordinator.message = "Time's up!"
-//                        scene.setInputEnabled(false)
-//                    }
+                    if mode == .arcade, let limit = coordinator.timeLimitForRound {
+                        startArcadeTimer(limit: limit)
+                    }
                 }
 
             case .wrong(_, let correctDotID):
@@ -372,10 +513,10 @@ private extension GameContainerView {
                 scene.showWrongFeedback()
                 scene.showOutcome(.wrong(chosenID: tappedID, newDotID: correctDotID))
                 scene.setInputEnabled(false)
+                timerBarStart = nil
             }
         }
 
-        // 5) Store references so SwiftUI can render + observe
         self.scene = scene
     }
 
