@@ -16,10 +16,11 @@ enum TapOutcome: Equatable {
 struct AddDotIfCorrectUseCase {
     let repo: GameSessionRepository
     let layout: DotLayoutGenerating
+    var progression: LevelProgression? = nil
 
     func callAsFunction(tapped id: UUID, in area: CGRect) -> TapOutcome {
         var snap = repo.load()
-        
+
         let baseRadius = snap.radius
         let jitter = CGFloat.random(in: -2...2)
         let newRadius = max(8, baseRadius + jitter)
@@ -49,6 +50,17 @@ struct AddDotIfCorrectUseCase {
         snap.roundIndex += 1
         snap.dots.append(newDot)
         snap.newDotID = newDot.id
+
+        // Scale difficulty for arcade progression
+        if let progression {
+            let newScore = snap.dots.count
+            let levelState = progression.state(forScore: newScore)
+            let difficulty = progression.difficulty(for: levelState.level)
+            snap.radius = difficulty.radius
+            snap.minDistance = difficulty.minDistance
+            snap.level = levelState
+            snap.difficulty = difficulty
+        }
 
         repo.save(snap)
 

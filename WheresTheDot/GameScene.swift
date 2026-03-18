@@ -396,6 +396,21 @@ final class GameScene: SKScene {
             roundTimerTask = nil
         }
 
+    // MARK: - Level-up flash
+
+    func flashLevelUp(color: UIColor) {
+        let flash = SKSpriteNode(color: color, size: size)
+        flash.position = CGPoint(x: size.width / 2, y: size.height / 2)
+        flash.zPosition = 19_000
+        flash.alpha = 0
+        addChild(flash)
+
+        let fadeIn  = SKAction.fadeAlpha(to: 0.45, duration: 0.08)
+        let hold    = SKAction.wait(forDuration: 0.15)
+        let fadeOut = SKAction.fadeOut(withDuration: 0.35)
+        flash.run(.sequence([fadeIn, hold, fadeOut, .removeFromParent()]))
+    }
+
 }
 
 
