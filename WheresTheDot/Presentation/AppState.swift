@@ -33,6 +33,14 @@ final class AppState: ObservableObject {
     func openSettings() {
         route = .settings
     }
+    
+    func openArcadeBoard(world: Int = 1) {
+        route = .arcadeBoard(world: world)
+    }
+
+    func startArcadeLevel(world: Int, level: Int) {
+        route = .game(.arcade(world: world, level: level))
+    }
 
     // MARK: - Helpers
 
@@ -41,3 +49,4 @@ final class AppState: ObservableObject {
         return false
     }
 }
+

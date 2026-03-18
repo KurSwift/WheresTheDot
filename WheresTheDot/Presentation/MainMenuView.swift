@@ -59,7 +59,7 @@ struct MainMenuView: View {
             .padding(10)
             
             Button {
-                appState.startGame(mode: .arcade)
+                appState.openArcadeBoard(world: 1)
             } label: {
                 Text("Arcade Mode")
                     .bold()
@@ -105,7 +105,7 @@ struct MainMenuView: View {
             return LocalizedStringResource(stringLiteral: "Limited time to choose the new dot.")
         case .daily:
             return LocalizedStringResource(stringLiteral: "One attempt per day with a fixed seed.")
-        case .arcade:
+        case .arcade(_, _):
             return LocalizedStringResource(stringLiteral: "Level up!")
         }
     }

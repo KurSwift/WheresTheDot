@@ -9,6 +9,7 @@ import Foundation
 
 enum AppRoute: Equatable {
     case mainMenu
+    case arcadeBoard(world: Int)
     case game(GameMode)
     case settings
 }
@@ -16,7 +17,7 @@ enum AppRoute: Equatable {
 enum GameMode: Equatable, Hashable {
     case classic
     case timed
-    case arcade
+    case arcade(world: Int, level: Int)
     case daily(seed: UInt64)
 }
 

@@ -18,6 +18,8 @@ struct RootView: View {
             switch appState.route {
             case .mainMenu:
                 MainMenuView()
+            case .arcadeBoard(let world):
+                ArcadeBoardView(world: world)
             case .game(let mode):
                 GameContainerView(
                         mode: mode,

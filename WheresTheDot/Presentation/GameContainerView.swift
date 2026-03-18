@@ -15,6 +15,17 @@ struct GameContainerView: View {
 
     let mode: GameMode
 
+    // Arcade state
+    private let progression = SimpleArcadeProgression()
+    @State private var currentLevel: Int = 1
+    @State private var nextLevelTarget: Int = SimpleArcadeProgression().initialState().nextLevelScore
+    @State private var showLevelUpBanner: Bool = false
+    @State private var lastScoreBeforeUpdate: Int = 0
+    @State private var levelUpAnimTrigger: Bool = false
+    @State private var targetScore: Int = 0
+    @State private var showLevelComplete: Bool = false
+    @State private var hueAngle: Angle = .degrees(0)
+
     @StateObject private var coordinator: GameCoordinator
     @State private var scene: GameScene?
     @State private var onboardingStep: Int? = nil
@@ -45,6 +56,7 @@ struct GameContainerView: View {
             // =========================
             if let scene {
                 SpriteView(scene: scene)
+                    .hueRotation(hueAngle)
                     .ignoresSafeArea()
             } else {
                 ProgressView()
@@ -52,6 +64,9 @@ struct GameContainerView: View {
             }
 
             hudDisplay
+                .allowsHitTesting(false)
+
+            levelUpEffectsOverlay
                 .allowsHitTesting(false)
 
             controlsOverlay
@@ -92,10 +107,16 @@ struct GameContainerView: View {
         .onAppear {
             guard appState.soundEnabled else { return }
             AudioManager.shared.startBackgroundMusic(filename: "gLoop2", ext: "wav")
+            if case .arcade(let w, _) = mode, w >= 2 {
+                withAnimation(.linear(duration: 10).repeatForever(autoreverses: false)) {
+                    hueAngle = .degrees(360)
+                }
+            }
         }
         .onDisappear {
             guard appState.soundEnabled else { return }
             AudioManager.shared.stopBackgroundMusic()
+            hueAngle = .degrees(0)
         }
     }
     
@@ -124,6 +145,11 @@ private extension GameContainerView {
         scene.render(round: firstRound)
         scene.setInputEnabled(true)
         coordinator.message = ""
+        
+        if case .arcade(let w, let l) = mode {
+            targetScore = 5 + (l - 1) * 2
+            showLevelComplete = false
+        }
     }
 
     private var hudDisplay: some View {
@@ -131,9 +157,20 @@ private extension GameContainerView {
             HStack {
                 Spacer()
 
-                VStack(alignment: .trailing) {
-                    Text("Round \(coordinator.roundIndex)")
-                    Text("Score \(coordinator.score)")
+                VStack(alignment: .trailing, spacing: 6) {
+                    Text("Round: \(coordinator.roundIndex)")
+                    Text("Score: \(coordinator.score)")
+
+                    if case .arcade(let w, let l) = mode {
+                        Divider().frame(width: 120)
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Text("World \(w) • Level \(l)")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            Text("Goal: \(coordinator.score)/\(targetScore)")
+                                .font(.subheadline)
+                        }
+                    }
                 }
                 .padding(10)
                 .background(.thinMaterial)
@@ -154,6 +191,50 @@ private extension GameContainerView {
             }
         }
         .padding()
+    }
+
+    private var levelUpEffectsOverlay: some View {
+        GeometryReader { geo in
+            ZStack {
+                if showLevelUpBanner || showLevelComplete {
+                    // Expanding neon rings near the top center
+                    let centerX = geo.size.width / 2
+                    let centerY: CGFloat = 120
+
+                    Circle()
+                        .stroke(Color.neonOrange.opacity(0.55), lineWidth: 6)
+                        .frame(width: 120, height: 120)
+                        .scaleEffect(levelUpAnimTrigger ? 1.6 : 0.3)
+                        .opacity(levelUpAnimTrigger ? 0.0 : 1.0)
+                        .position(x: centerX, y: centerY)
+                        .animation(.easeOut(duration: 0.8), value: levelUpAnimTrigger)
+
+                    Circle()
+                        .stroke(Color.neonYellow.opacity(0.45), lineWidth: 3)
+                        .frame(width: 90, height: 90)
+                        .scaleEffect(levelUpAnimTrigger ? 2.0 : 0.4)
+                        .opacity(levelUpAnimTrigger ? 0.0 : 1.0)
+                        .position(x: centerX, y: centerY)
+                        .animation(.easeOut(duration: 0.9), value: levelUpAnimTrigger)
+
+                    // Sparkles radiating out from the same center
+                    ForEach(0..<12, id: \.self) { i in
+                        let angle = (Double(i) / 12.0) * 2.0 * Double.pi
+                        let radius: CGFloat = levelUpAnimTrigger ? 160 : 10
+                        let x = centerX + CGFloat(cos(angle)) * radius
+                        let y = centerY + CGFloat(sin(angle)) * radius
+
+                        Circle()
+                            .fill([Color.neonOrange, .neonYellow, .neonCyan, .neonMagenta].randomElement() ?? .neonOrange)
+                            .frame(width: 8, height: 8)
+                            .opacity(levelUpAnimTrigger ? 0.0 : 1.0)
+                            .position(x: x, y: y)
+                            .animation(.easeOut(duration: 0.85), value: levelUpAnimTrigger)
+                    }
+                }
+            }
+            .ignoresSafeArea()
+        }
     }
 
     private var controlsOverlay: some View {
@@ -178,9 +259,59 @@ private extension GameContainerView {
                 }
                 Spacer()
             }
-            .padding()
+            .padding(.top, 8)
+            .padding(.horizontal, 12)
+            
+            if showLevelComplete {
+                ZStack {
+                    Color.black.opacity(0.35)
+                        .ignoresSafeArea()
 
-            Spacer()
+                    VStack(spacing: 14) {
+                        Text("Level Complete!")
+                            .font(.title2)
+                            .fontWeight(.bold)
+
+                        Text("Goal reached: \(targetScore)")
+                            .font(.headline)
+                            .foregroundStyle(.secondary)
+
+                        HStack(spacing: 12) {
+                            Button {
+                                if case .arcade(let w, let l) = mode {
+                                    showLevelComplete = false
+                                    let nextLevel = l + 1
+                                    if nextLevel <= 10 {
+                                        appState.startArcadeLevel(world: w, level: nextLevel)
+                                    } else {
+                                        appState.openArcadeBoard(world: w + 1)
+                                    }
+                                }
+                            } label: {
+                                Text("Next Level")
+                                    .frame(maxWidth: 160)
+                            }
+                            .buttonStyle(.borderedProminent)
+
+                            Button {
+                                if case .arcade(let w, _) = mode {
+                                    showLevelComplete = false
+                                    appState.openArcadeBoard(world: w)
+                                }
+                            } label: {
+                                Text("Back to Map")
+                                    .frame(maxWidth: 160)
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                        .controlSize(.large)
+                    }
+                    .padding(18)
+                    .background(.thinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 18))
+                    .padding(.horizontal, 24)
+                }
+            }
 
             if coordinator.message == "Game Over" || coordinator.message == "Time’s up!" {
                 ZStack {
@@ -246,6 +377,13 @@ private extension GameContainerView {
             let area = playableRect(for: size)
 
             let firstRound = coordinator.startGame(in: area)
+
+            // Arcade init
+            if case .arcade(let w, let l) = mode {
+                targetScore = 5 + (l - 1) * 2
+                showLevelComplete = false
+            }
+
             scene.render(round: firstRound)
             scene.setInputEnabled(true)
             
@@ -301,14 +439,29 @@ private extension GameContainerView {
                 if appState.hapticsEnabled { Haptics.correct() }
                 let score = nextRound.dots.count
 
+                // Arcade level completion check
+                if case .arcade(let w, let l) = mode {
+                    if score >= targetScore {
+                        showLevelComplete = true
+                        levelUpAnimTrigger.toggle()
+                        scene.setInputEnabled(false)
+                    }
+                }
+
                 // Example curve:
                 // 1–5 dots: 0.25s
                 // 6–12 dots: 0.45s
                 // 13+: 0.65s
                 let coverDuration: TimeInterval = {
-                    if score <= 5 { return 0.45 }
-                    if score <= 12 { return 0.65 }
-                    return 0.65
+                    let base: TimeInterval = {
+                        if score <= 5 { return 0.45 }
+                        if score <= 12 { return 0.65 }
+                        return 0.65
+                    }()
+                    let worldBoost: TimeInterval = {
+                        if case .arcade(let w, _) = mode { return Double(max(0, w - 1)) * 0.2 } else { return 0 }
+                    }()
+                    return base + worldBoost
                 }()
 
                 // Show cover
@@ -393,3 +546,4 @@ private extension GameContainerView {
         }
     }
 }
+
