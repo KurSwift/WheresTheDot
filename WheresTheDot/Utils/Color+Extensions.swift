@@ -30,6 +30,15 @@ extension Color {
 
     static let dottoSuccess = Color(uiColor: UIColor.dottoSuccess)
     static let dottoDanger  = Color(uiColor: UIColor.dottoDanger)
+
+    // MARK: - Accessible Palette (Okabe-Ito inspired, colorblind-safe neons)
+
+    static let accessibleBlue     = Color(uiColor: UIColor.accessibleBlue)
+    static let accessibleAmber    = Color(uiColor: UIColor.accessibleAmber)
+    static let accessibleTeal     = Color(uiColor: UIColor.accessibleTeal)
+    static let accessibleYellow   = Color(uiColor: UIColor.accessibleYellow)
+    static let accessibleLavender = Color(uiColor: UIColor.accessibleLavender)
+    static let accessibleDanger   = Color(uiColor: UIColor.accessibleDanger)
 }
 
 extension UIColor {
@@ -46,7 +55,7 @@ extension UIColor {
 
     static let neonCyan    = UIColor(hex: "#00F2FF")
     static let neonMagenta = UIColor(hex: "#FF2BD6")
-    static let neonPurple  = UIColor(hex: "#8A4DFF")
+    static let neonPurple  = UIColor(hex: "#9966FF")   // boosted from #8A4DFF for better contrast
     static let neonLime    = UIColor(hex: "#B8FF3B")
     static let neonYellow  = UIColor(hex: "#FFD84A")
     static let neonCoral   = UIColor(hex: "#FF4D5E")
@@ -57,6 +66,22 @@ extension UIColor {
 
     static let dottoSuccess = UIColor(hex: "#2BFFB8")
     static let dottoDanger  = UIColor(hex: "#FF3B30")
+
+    // MARK: - Accessible Neons (Okabe-Ito inspired, brightened for dark backgrounds)
+    // Distinguishable across deuteranopia, protanopia, and tritanopia.
+
+    /// Sky blue — safe for all colorblind types; replaces cyan in the accessible cycle.
+    static let accessibleBlue     = UIColor(hex: "#56C8F0")
+    /// Warm amber — uniquely yellow-orange; replaces pink/magenta.
+    static let accessibleAmber    = UIColor(hex: "#FFB020")
+    /// Teal-green — cyan-shifted; safe replacement for lime.
+    static let accessibleTeal     = UIColor(hex: "#00D4A0")
+    /// Bright yellow — distinct hue anchor; safe fourth slot.
+    static let accessibleYellow   = UIColor(hex: "#F5E050")
+    /// Soft lavender — distinguishable from blue by hue angle; replaces orange slot.
+    static let accessibleLavender = UIColor(hex: "#CC88DD")
+    /// Vermillion — orange-shifted red; safer than pure red for red-green colorblindness.
+    static let accessibleDanger   = UIColor(hex: "#FF7030")
 }
 
 // MARK: - Hex initializer
@@ -82,5 +107,3 @@ extension UIColor {
         self.init(red: r, green: g, blue: b, alpha: alpha)
     }
 }
-
-

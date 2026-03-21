@@ -67,6 +67,11 @@ struct SettingsView: View {
                 .toggleStyle(.switch)
                 .glassEffect()
                 .padding()
+            Toggle("Color Blind Mode", isOn: $appState.colorBlindMode)
+                .padding()
+                .toggleStyle(.switch)
+                .glassEffect()
+                .padding()
             Spacer()
             Button {
                 appState.goHome()

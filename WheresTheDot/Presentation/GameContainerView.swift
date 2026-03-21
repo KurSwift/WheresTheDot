@@ -98,6 +98,9 @@ struct GameContainerView: View {
         }
         .animation(.spring(response: 0.38, dampingFraction: 0.85), value: coordinator.message)
         .animation(.easeInOut(duration: 0.25), value: coordinator.showLevelUp)
+        .onChange(of: appState.colorBlindMode) { _, newValue in
+            scene?.colorBlindMode = newValue
+        }
         .onAppear {
             guard appState.soundEnabled else { return }
             AudioManager.shared.startBackgroundMusic(filename: "gLoop2", ext: "wav")
@@ -149,6 +152,11 @@ private extension GameContainerView {
     }
 
     private func timerBarColor(_ progress: CGFloat) -> Color {
+        if appState.colorBlindMode {
+            if progress > 0.5 { return .accessibleBlue }
+            if progress > 0.25 { return .accessibleAmber }
+            return .accessibleDanger
+        }
         if progress > 0.5 { return .neonCyan }
         if progress > 0.25 { return .neonOrange }
         return .dottoDanger
@@ -157,6 +165,10 @@ private extension GameContainerView {
     // MARK: - Level-up overlay (Atari-style)
 
     private var levelUpLevelColor: Color {
+        if appState.colorBlindMode {
+            let colors: [Color] = [.accessibleBlue, .accessibleAmber, .accessibleTeal, .accessibleYellow, .accessibleLavender]
+            return colors[(coordinator.currentLevel - 1) % colors.count]
+        }
         let colors: [Color] = [.neonCyan, .neonPink, .neonPurple, .neonLime, .neonOrange]
         return colors[(coordinator.currentLevel - 1) % colors.count]
     }
@@ -309,10 +321,14 @@ private extension GameContainerView {
             VStack(spacing: 36) {
 
                 // Title
-                Text("GAME OVER")
-                    .font(.system(size: 42, weight: .black, design: .rounded))
-                    .foregroundStyle(Color.dottoDanger)
-                    .shadow(color: Color.dottoDanger.opacity(0.75), radius: 20, x: 0, y: 0)
+                HStack(spacing: 10) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 36, weight: .black))
+                    Text("GAME OVER")
+                        .font(.system(size: 42, weight: .black, design: .rounded))
+                }
+                .foregroundStyle(appState.colorBlindMode ? Color.accessibleDanger : Color.dottoDanger)
+                .shadow(color: (appState.colorBlindMode ? Color.accessibleDanger : Color.dottoDanger).opacity(0.75), radius: 20, x: 0, y: 0)
 
                 // Score block
                 VStack(spacing: 6) {
@@ -399,6 +415,7 @@ private extension GameContainerView {
         // Create SpriteKit scene
         let scene = GameScene(size: .zero)
         scene.scaleMode = .resizeFill
+        scene.colorBlindMode = appState.colorBlindMode
 
         func playableRect(for sceneSize: CGSize) -> CGRect {
             CGRect(origin: .zero, size: sceneSize)
@@ -481,14 +498,18 @@ private extension GameContainerView {
 
                     scene.render(round: nextRound)
                     if let newNode = scene.dotNode(id: nextRound.newDotID) {
-                        let colors: [UIColor] = [.neonCyan, .neonPink, .neonPurple, .neonLime, .neonOrange]
+                        let colors: [UIColor] = appState.colorBlindMode
+                            ? [.accessibleBlue, .accessibleAmber, .accessibleTeal, .accessibleYellow, .accessibleLavender]
+                            : [.neonCyan, .neonPink, .neonPurple, .neonLime, .neonOrange]
                         let burstColor = colors[(max(1, score) - 1) % colors.count]
                         scene.spawnCorrectBurst(at: newNode.position, color: burstColor)
                     }
 
                     // Level-up: flash the scene and wait for banner
                     if coordinator.showLevelUp {
-                        let levelColors: [UIColor] = [.neonCyan, .neonPink, .neonPurple, .neonLime, .neonOrange]
+                        let levelColors: [UIColor] = appState.colorBlindMode
+                            ? [.accessibleBlue, .accessibleAmber, .accessibleTeal, .accessibleYellow, .accessibleLavender]
+                            : [.neonCyan, .neonPink, .neonPurple, .neonLime, .neonOrange]
                         let levelColor = levelColors[(coordinator.currentLevel - 1) % levelColors.count]
                         scene.flashLevelUp(color: levelColor)
                         try? await Task.sleep(nanoseconds: 1_800_000_000)

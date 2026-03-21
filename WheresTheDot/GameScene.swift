@@ -19,6 +19,7 @@ final class GameScene: SKScene {
     }
     
     var level: GameLevel = .beginner
+    var colorBlindMode: Bool = false
 
     // MARK: - Init
 
@@ -411,12 +412,14 @@ final class GameScene: SKScene {
         flash.run(.sequence([fadeIn, hold, fadeOut, .removeFromParent()]))
     }
 
-}
+    // MARK: - Color Helpers
 
+    private func arcadeColor(for score: Int) -> UIColor {
+        let colors = colorBlindMode
+            ? [UIColor.accessibleBlue, .accessibleAmber, .accessibleTeal, .accessibleYellow, .accessibleLavender]
+            : [UIColor.neonCyan, .neonPink, .neonPurple, .neonLime, .neonOrange]
+        return colors[(max(1, score) - 1) % colors.count]
+    }
 
-private func arcadeColor(for score: Int) -> UIColor {
-    // cycles through neon colors as you progress
-    let colors: [UIColor] = [.neonCyan, .neonPink, .neonPurple, .neonLime, .neonOrange]
-    return colors[(max(1, score) - 1) % colors.count]
 }
 
