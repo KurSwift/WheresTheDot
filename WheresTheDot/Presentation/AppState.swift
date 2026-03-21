@@ -14,6 +14,7 @@ final class AppState: ObservableObject {
     @AppStorage("hasSeenOnboarding") var hasSeenOnboarding: Bool = false
     @AppStorage("hapticsEnabled") var hapticsEnabled: Bool = true
     @AppStorage("soundEnabled") var soundEnabled: Bool = true
+    @AppStorage("colorBlindMode") var colorBlindMode: Bool = false
 
     // MARK: - Navigation
 
