@@ -5,18 +5,10 @@
 //  Created by Ernesto Sánchez Kuri on 08/02/26.
 //
 
-import Foundation
 import SwiftUI
-internal import Combine
-
-@MainActor
-final class MainMenuViewModel: ObservableObject {
-    @Published var selectedMode: GameMode = .classic
-}
 
 struct MainMenuView: View {
     @EnvironmentObject private var appState: AppState
-    @StateObject private var vm = MainMenuViewModel()
 
     var body: some View {
         ZStack {
@@ -69,16 +61,6 @@ struct MainMenuView: View {
             .padding(10)
             
             Button {
-                vm.selectedMode = .timed
-            } label: {
-                Text("Time Attack")
-                    .bold()
-                    .padding()
-            }
-            .buttonStyle(DottoButtonStyle(kind: .timeAttack))
-            .padding(10)
-            
-            Button {
                 appState.openSettings()
             } label: {
                 Text("Options")
@@ -97,18 +79,7 @@ struct MainMenuView: View {
             .foregroundStyle(Color.white)
     }
 
-    private func modeDescription(_ mode: GameMode) -> LocalizedStringResource {
-        switch mode {
-        case .classic:
-            return LocalizedStringResource(stringLiteral: "No timer. Focus on accuracy.")
-        case .timed:
-            return LocalizedStringResource(stringLiteral: "Limited time to choose the new dot.")
-        case .daily:
-            return LocalizedStringResource(stringLiteral: "One attempt per day with a fixed seed.")
-        case .arcade:
-            return LocalizedStringResource(stringLiteral: "Level up!")
-        }
-    }
+
 }
 
 #Preview {

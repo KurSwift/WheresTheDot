@@ -28,6 +28,10 @@ struct GameContainerView: View {
         case 2:
             return LocalizedStringResource(stringLiteral: "A NEW dot was added.\nTap the NEW one.")
         case 3:
+            return LocalizedStringResource(stringLiteral: "Keep going.\nCan you find the new dot?")
+        case 4:
+            return LocalizedStringResource(stringLiteral: "Another one!\nKeep going.")
+        case 5:
             return LocalizedStringResource(stringLiteral: "Now it gets real.\nMiss = Game Over.\nReady?")
         default:
             return nil
@@ -38,7 +42,6 @@ struct GameContainerView: View {
         switch mode {
         case .classic:    return .classic
         case .arcade:     return .arcade
-        case .timed:      return .timeAttack
         case .daily:      return .classic
         }
     }
@@ -91,8 +94,8 @@ struct GameContainerView: View {
                     .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .center)))
             }
 
-            // Onboarding step-3 modal
-            if onboardingStep == 3 {
+            // Onboarding step-5 modal
+            if onboardingStep == 5 {
                 onboardingModal
             }
         }
@@ -241,7 +244,7 @@ private extension GameContainerView {
 
             Spacer()
 
-            if let text = onboardingText, onboardingStep != 3 {
+            if let text = onboardingText, onboardingStep != 5 {
                 Text(text)
                     .font(.headline)
                     .multilineTextAlignment(.center)
@@ -565,9 +568,11 @@ private extension GameContainerView {
                 scene.pulseDot(id: nextRound.newDotID)
                 scene.setInputEnabled(true)
 
-                if onboardingStep == 1 { onboardingStep = 2 }
-                else if onboardingStep == 2 {
-                    onboardingStep = 3
+                if let step = onboardingStep, step < 4 {
+                    onboardingStep! += 1
+                }
+                else if onboardingStep == 4 {
+                    onboardingStep = 5
                     scene.setInputEnabled(false)
                 }
             }

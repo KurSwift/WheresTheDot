@@ -15,7 +15,6 @@ enum AppRoute: Equatable {
 
 enum GameMode: Equatable, Hashable {
     case classic
-    case timed
     case arcade
     case daily(seed: UInt64)
 }
