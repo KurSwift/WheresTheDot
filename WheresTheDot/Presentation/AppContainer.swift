@@ -16,23 +16,28 @@ final class AppContainer: ObservableObject {
     private let layout: DotLayoutGenerating
     private let sessionRepo: GameSessionRepository
 
-    // Use cases (NEW)
+    // Use cases
     let startGame: StartGameUseCase
     let addDotIfCorrect: AddDotIfCorrectUseCase
 
-    init() {
-        // Shared services
+    // Exposed so GameCoordinator can read time limits per level
+    let progression: LevelProgression?
+
+    init(mode: GameMode = .classic) {
         let rng = GKRandomAdapter()
         let layout = SimpleNewDotLayoutGenerator(rng: rng)
 
-        // Initial snapshot for *this* game mode
+        // For arcade, seed the initial difficulty from level-1 parameters
+        let progression: LevelProgression? = (mode == .arcade) ? SimpleArcadeProgression() : nil
+        let level1 = progression?.difficulty(for: 1)
+
         let initialSnapshot = GameSnapshot(
             roundIndex: 0,
             dots: [],
             newDotID: nil,
             isGameOver: false,
-            radius: 18,
-            minDistance: 44
+            radius: level1?.radius ?? 18,
+            minDistance: level1?.minDistance ?? 44
         )
 
         let repo = InMemoryGameSessionRepository(initial: initialSnapshot)
@@ -40,9 +45,9 @@ final class AppContainer: ObservableObject {
         self.rng = rng
         self.layout = layout
         self.sessionRepo = repo
+        self.progression = progression
 
-        // Use cases
         self.startGame = StartGameUseCase(repo: repo, layout: layout)
-        self.addDotIfCorrect = AddDotIfCorrectUseCase(repo: repo, layout: layout)
+        self.addDotIfCorrect = AddDotIfCorrectUseCase(repo: repo, layout: layout, progression: progression)
     }
 }

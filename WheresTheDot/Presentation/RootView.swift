@@ -10,7 +10,6 @@ import SwiftUI
 
 
 struct RootView: View {
-    @State private var container = AppContainer()
     @StateObject private var appState = AppState()
 
     var body: some View {
@@ -19,16 +18,11 @@ struct RootView: View {
             case .mainMenu:
                 MainMenuView()
             case .game(let mode):
-                GameContainerView(
-                        mode: mode,
-                        coordinator: GameCoordinator(start: container.startGame,
-                                                     addIfCorrect: container.addDotIfCorrect)
-                    )
+                GameContainerView(mode: mode)
             case .settings:
                 SettingsView()
             }
         }
         .environmentObject(appState)
-        .environmentObject(container)
     }
 }
