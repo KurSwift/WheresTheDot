@@ -24,6 +24,7 @@ final class GameCoordinator: ObservableObject {
     let start: StartGameUseCase
     private let addIfCorrect: AddDotIfCorrectUseCase
     private let progression: LevelProgression?
+    private var gameStartedAt: Date?
 
     init(mode: GameMode = .classic,
          start: StartGameUseCase,
@@ -42,6 +43,7 @@ final class GameCoordinator: ObservableObject {
         message = ""
         currentLevel = 1
         showLevelUp = false
+        gameStartedAt = Date()
         if let p = progression {
             timeLimitForRound = p.difficulty(for: 1).timeLimit
         }
@@ -70,6 +72,9 @@ final class GameCoordinator: ObservableObject {
             score = gameOverScore
             message = "Game Over"
             timeLimitForRound = nil
+            let duration = gameStartedAt.map { Date().timeIntervalSince($0) } ?? 0
+            FirebaseEventsManager.logGameEnded(duration: duration, score: gameOverScore, mode: mode)
+            gameStartedAt = nil
         }
         return outcome
     }
