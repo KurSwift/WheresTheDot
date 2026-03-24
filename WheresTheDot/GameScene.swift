@@ -204,7 +204,7 @@ final class GameScene: SKScene {
             node.strokeColor = .clear
             node.blendMode = .add
             node.zPosition = 1
-            node.userData = ["id": dot.id.uuidString]
+            node.userData = ["id": dot.id.uuidString, "radius": dot.radius]
             addChild(node)
 
             // Pop-in
@@ -397,7 +397,43 @@ final class GameScene: SKScene {
             roundTimerTask = nil
         }
 
-    // MARK: - Level-up flash
+    // MARK: - Level-up flash & new-dot intro
+
+    /// Dramatic entrance for the new dot when a level is reached.
+    /// Plays a bounce + two expanding ripple rings so the dot feels distinct.
+    func spawnLevelUpNewDot(id: UUID, color: UIColor) {
+        guard let node = dotNode(id: id) else { return }
+        let radius = (node.userData?["radius"] as? CGFloat) ?? 14.0
+
+        // Bounce after the regular pop-in (0.14s) finishes
+        let scaleUp = SKAction.scale(to: 1.65, duration: 0.16)
+        scaleUp.timingMode = .easeOut
+        let scaleDown = SKAction.scale(to: 1.0, duration: 0.22)
+        scaleDown.timingMode = .easeIn
+        node.run(.sequence([.wait(forDuration: 0.14), scaleUp, scaleDown]))
+
+        // Two staggered ripple rings expanding outward
+        for i in 0..<2 {
+            let delay = Double(i) * 0.13
+            let ring = SKShapeNode(circleOfRadius: radius)
+            ring.strokeColor = color.withAlphaComponent(i == 0 ? 0.85 : 0.5)
+            ring.fillColor = .clear
+            ring.lineWidth = i == 0 ? 2.5 : 1.5
+            ring.position = node.position
+            ring.zPosition = 5
+            ring.blendMode = .add
+            addChild(ring)
+
+            let expandDuration: TimeInterval = 0.50
+            let expand = SKAction.scale(to: 4.5, duration: expandDuration)
+            expand.timingMode = .easeOut
+            ring.run(.sequence([
+                .wait(forDuration: delay),
+                .group([expand, .fadeOut(withDuration: expandDuration)]),
+                .removeFromParent()
+            ]))
+        }
+    }
 
     func flashLevelUp(color: UIColor) {
         let flash = SKSpriteNode(color: color, size: size)
