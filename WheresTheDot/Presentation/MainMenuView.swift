@@ -35,6 +35,7 @@ struct MainMenuView: View {
     private var menuButtons: some View {
         VStack(alignment: .leading) {
             Button {
+                FirebaseEventsManager.logGameModeSelected(.classic)
                 appState.startGame(mode: .classic)
             } label: {
                 HStack(spacing: 0) {
@@ -45,12 +46,13 @@ struct MainMenuView: View {
                         .bold()
                         .padding()
                 }
-                
+
             }
             .buttonStyle(DottoButtonStyle(kind: .classic))
             .padding(10)
-            
+
             Button {
+                FirebaseEventsManager.logGameModeSelected(.arcade)
                 appState.startGame(mode: .arcade)
             } label: {
                 Text("Arcade Mode")
@@ -59,8 +61,9 @@ struct MainMenuView: View {
             }
             .buttonStyle(DottoButtonStyle(kind: .arcade))
             .padding(10)
-            
+
             Button {
+                FirebaseEventsManager.logSettingsOpened()
                 appState.openSettings()
             } label: {
                 Text("Options")
