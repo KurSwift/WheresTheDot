@@ -82,10 +82,14 @@ struct GameContainerView: View {
 
             topControls
 
-            // Level-up overlay (arcade only)
+            // Level-up banner (arcade only) — floats at top, non-blocking
             if coordinator.showLevelUp {
-                levelUpOverlay
-                    .transition(.opacity.combined(with: .scale(scale: 1.05, anchor: .center)))
+                levelUpBanner
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .top).combined(with: .opacity),
+                        removal: .opacity
+                    ))
+                    .allowsHitTesting(false)
             }
 
             // Game Over overlay (separate layer, animated)
@@ -165,7 +169,7 @@ private extension GameContainerView {
         return .dottoDanger
     }
 
-    // MARK: - Level-up overlay (Atari-style)
+    // MARK: - Level-up banner
 
     private var levelUpLevelColor: Color {
         if appState.colorBlindMode {
@@ -176,28 +180,31 @@ private extension GameContainerView {
         return colors[(coordinator.currentLevel - 1) % colors.count]
     }
 
-    private var levelUpOverlay: some View {
-        ZStack {
-            Color.black.opacity(0.88)
-                .ignoresSafeArea()
-
-            VStack(spacing: 6) {
-                Text("- LEVEL -")
-                    .font(.system(size: 13, weight: .bold, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.5))
-                    .kerning(8)
-
-                Text("\(coordinator.currentLevel)")
-                    .font(.system(size: 110, weight: .black, design: .monospaced))
+    /// Small floating pill that slides in from the top and auto-dismisses.
+    /// Does not block the dot field or game input.
+    private var levelUpBanner: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Rectangle()
+                    .fill(levelUpLevelColor.opacity(0.45))
+                    .frame(width: 18, height: 1)
+                Text("LEVEL \(coordinator.currentLevel)")
+                    .font(.system(size: 14, weight: .black, design: .monospaced))
                     .foregroundStyle(levelUpLevelColor)
-                    .shadow(color: levelUpLevelColor.opacity(0.9), radius: 30)
-                    .shadow(color: levelUpLevelColor.opacity(0.5), radius: 70)
-
-                Text("ADVANCED!")
-                    .font(.system(size: 13, weight: .bold, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.5))
-                    .kerning(5)
+                    .shadow(color: levelUpLevelColor.opacity(0.9), radius: 10)
+                    .kerning(4)
+                Rectangle()
+                    .fill(levelUpLevelColor.opacity(0.45))
+                    .frame(width: 18, height: 1)
             }
+            .padding(.horizontal, 22)
+            .padding(.vertical, 11)
+            .background(.ultraThinMaterial)
+            .clipShape(Capsule())
+            .overlay(Capsule().stroke(levelUpLevelColor.opacity(0.35), lineWidth: 1))
+            .padding(.top, 96)
+
+            Spacer()
         }
     }
 
@@ -508,20 +515,23 @@ private extension GameContainerView {
                         scene.spawnCorrectBurst(at: newNode.position, color: burstColor)
                     }
 
-                    // Level-up: flash the scene and wait for banner
-                    if coordinator.showLevelUp {
+                    let isLevelUp = coordinator.showLevelUp
+                    if isLevelUp {
                         let levelColors: [UIColor] = appState.colorBlindMode
                             ? [.accessibleBlue, .accessibleAmber, .accessibleTeal, .accessibleYellow, .accessibleLavender]
                             : [.neonCyan, .neonPink, .neonPurple, .neonLime, .neonOrange]
                         let levelColor = levelColors[(coordinator.currentLevel - 1) % levelColors.count]
                         scene.flashLevelUp(color: levelColor)
-                        try? await Task.sleep(nanoseconds: 1_800_000_000)
-                        coordinator.showLevelUp = false
-                    }
-
-                    if shouldPulseNewDot(forScore: nextRound.dots.count) {
+                        scene.spawnLevelUpNewDot(id: nextRound.newDotID, color: levelColor)
+                        // Dismiss banner non-blocking — game resumes immediately
+                        Task { @MainActor in
+                            try? await Task.sleep(nanoseconds: 1_200_000_000)
+                            coordinator.showLevelUp = false
+                        }
+                    } else if shouldPulseNewDot(forScore: nextRound.dots.count) {
                         scene.pulseDot(id: nextRound.newDotID)
                     }
+
                     scene.setInputEnabled(true)
 
                     if mode == .arcade, let limit = coordinator.timeLimitForRound {
