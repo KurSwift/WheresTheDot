@@ -19,6 +19,7 @@ struct GameContainerView: View {
     @State private var scene: GameScene?
     @State private var onboardingStep: Int? = nil
     @State private var gameOverVisible = false
+    @State private var onboardingIntroVisible = false
 
     // Arcade timer bar
     @State private var timerBarStart: Date? = nil
@@ -94,6 +95,12 @@ struct GameContainerView: View {
                     .allowsHitTesting(false)
             }
 
+            // Onboarding progress indicator (steps 1-4)
+            if let step = onboardingStep, (1...4).contains(step) {
+                onboardingProgressIndicator(current: step)
+                    .allowsHitTesting(false)
+            }
+
             // Game Over overlay (separate layer, animated)
             if gameOverVisible {
                 gameOverOverlay
@@ -104,7 +111,17 @@ struct GameContainerView: View {
             if onboardingStep == 5 {
                 onboardingModal
             }
+
+            // Onboarding intro — full-screen, shown before first interaction
+            if onboardingIntroVisible {
+                OnboardingIntroView {
+                    onboardingIntroVisible = false
+                }
+                .transition(.opacity)
+                .zIndex(100)
+            }
         }
+        .animation(.easeInOut(duration: 0.4), value: onboardingIntroVisible)
         .animation(.spring(response: 0.38, dampingFraction: 0.85), value: coordinator.message)
         .animation(.easeInOut(duration: 0.25), value: coordinator.showLevelUp)
         .onChange(of: coordinator.message) { _, newValue in
@@ -123,6 +140,7 @@ struct GameContainerView: View {
             scene?.colorBlindMode = newValue
         }
         .onAppear {
+            onboardingIntroVisible = !hasSeenOnboarding
             GKAccessPoint.shared.isActive = false
             guard appState.soundEnabled else { return }
             AudioManager.shared.startBackgroundMusic(filename: "gLoop2", ext: "wav")
@@ -400,7 +418,26 @@ private extension GameContainerView {
         }
     }
 
-    /// Onboarding step-3 modal (final confirmation before real game starts).
+    private func onboardingProgressIndicator(current: Int) -> some View {
+        VStack {
+            HStack(spacing: 8) {
+                ForEach(1...4, id: \.self) { step in
+                    Circle()
+                        .fill(current >= step ? Color.neonCyan : Color.white.opacity(0.2))
+                        .frame(width: 7, height: 7)
+                        .animation(.easeInOut(duration: 0.25), value: current)
+                }
+            }
+            .padding(.vertical, 8)
+            .padding(.horizontal, 16)
+            .background(.ultraThinMaterial)
+            .clipShape(Capsule())
+            .padding(.top, 60)
+            Spacer()
+        }
+    }
+
+    /// Onboarding step-5 modal (final confirmation before real game starts).
     private var onboardingModal: some View {
         ZStack {
             Color.black.opacity(0.45).ignoresSafeArea()
@@ -471,7 +508,7 @@ private extension GameContainerView {
 
                 if hasSeenOnboarding == false {
                     onboardingStep = 1
-                    scene.pulseDot(id: firstRound.newDotID)
+                    scene.showRingHint(id: firstRound.newDotID, color: .neonCyan)
                 } else {
                     onboardingStep = nil
                     if shouldPulseNewDot(forScore: firstRound.dots.count) {
@@ -605,9 +642,8 @@ private extension GameContainerView {
                 let animDuration = scene.render(round: nextRound)
                 try? await Task.sleep(nanoseconds: UInt64(animDuration * 1_000_000_000))
 
-                scene.pulseDot(id: nextRound.newDotID)
-
                 if let step = onboardingStep, step < 4 {
+                    scene.showRingHint(id: nextRound.newDotID, color: .neonCyan)
                     onboardingStep! += 1
                     scene.setInputEnabled(true)
                 } else if onboardingStep == 4 {

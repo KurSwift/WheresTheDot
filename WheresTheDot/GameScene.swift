@@ -170,6 +170,7 @@ final class GameScene: SKScene {
     func render(round: Round) -> TimeInterval {
         enumerateChildNodes(withName: "dot") { node, _ in node.removeFromParent() }
         enumerateChildNodes(withName: "halo") { node, _ in node.removeFromParent() }
+        clearRingHint()
 
         let score = round.dots.count
         let baseColor = arcadeColor(for: score)
@@ -462,6 +463,37 @@ final class GameScene: SKScene {
         let hold    = SKAction.wait(forDuration: 0.15)
         let fadeOut = SKAction.fadeOut(withDuration: 0.35)
         flash.run(.sequence([fadeIn, hold, fadeOut, .removeFromParent()]))
+    }
+
+    // MARK: - Ring Hint (onboarding)
+
+    private let ringHintName = "ring-hint"
+
+    func showRingHint(id: UUID, color: UIColor) {
+        clearRingHint()
+        guard let node = dotNode(id: id) else { return }
+        let radius = (node.userData?["radius"] as? CGFloat) ?? 14.0
+
+        let ring = SKShapeNode(circleOfRadius: radius + 8)
+        ring.name = ringHintName
+        ring.strokeColor = color.withAlphaComponent(0.85)
+        ring.fillColor = .clear
+        ring.lineWidth = 2
+        ring.position = node.position
+        ring.zPosition = 10
+        ring.blendMode = .add
+        addChild(ring)
+
+        let expand  = SKAction.scale(to: 1.8, duration: 0.75)
+        expand.timingMode = .easeOut
+        let fade    = SKAction.fadeAlpha(to: 0.0, duration: 0.75)
+        let reset   = SKAction.group([.scale(to: 1.0, duration: 0), .fadeAlpha(to: 0.85, duration: 0)])
+        let pause   = SKAction.wait(forDuration: 0.15)
+        ring.run(.repeatForever(.sequence([.group([expand, fade]), reset, pause])))
+    }
+
+    func clearRingHint() {
+        childNode(withName: ringHintName)?.removeFromParent()
     }
 
     // MARK: - Score Feedback
