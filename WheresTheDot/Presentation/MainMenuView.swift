@@ -6,9 +6,11 @@
 //
 
 import SwiftUI
+import GameKit
 
 struct MainMenuView: View {
     @EnvironmentObject private var appState: AppState
+    @ObservedObject private var gameCenter = GameCenterManager.shared
 
     var body: some View {
         ZStack {
@@ -23,6 +25,10 @@ struct MainMenuView: View {
                 Spacer()
                 footer
             }
+        }
+        .onAppear {
+            print("[MainMenuView] onAppear — isAuthenticated: \(GameCenterManager.shared.isAuthenticated)")
+            GameCenterManager.shared.authenticateLocalPlayer()
         }
     }
 
@@ -72,6 +78,23 @@ struct MainMenuView: View {
             }
             .buttonStyle(DottoButtonStyle(kind: .options))
             .padding(10)
+
+            if gameCenter.isAuthenticated {
+                Button {
+                    GameCenterManager.shared.presentLeaderboards()
+                } label: {
+                    HStack(spacing: 0) {
+                        Text("Leaderboards")
+                            .bold()
+                            .padding()
+                        Image(systemName: "trophy.fill")
+                            .bold()
+                            .padding()
+                    }
+                }
+                .buttonStyle(DottoButtonStyle(kind: .classic))
+                .padding(10)
+            }
         }
         .padding(.top, 8)
     }

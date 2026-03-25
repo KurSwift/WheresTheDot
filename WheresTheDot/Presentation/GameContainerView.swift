@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SpriteKit
+import GameKit
 
 struct GameContainerView: View {
     @EnvironmentObject private var appState: AppState
@@ -109,10 +110,12 @@ struct GameContainerView: View {
             scene?.colorBlindMode = newValue
         }
         .onAppear {
+            GKAccessPoint.shared.isActive = false
             guard appState.soundEnabled else { return }
             AudioManager.shared.startBackgroundMusic(filename: "gLoop2", ext: "wav")
         }
         .onDisappear {
+            GKAccessPoint.shared.isActive = GameCenterManager.shared.isAuthenticated
             guard appState.soundEnabled else { return }
             AudioManager.shared.stopBackgroundMusic()
         }
