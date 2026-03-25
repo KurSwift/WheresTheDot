@@ -18,6 +18,7 @@ struct GameContainerView: View {
     @StateObject private var coordinator: GameCoordinator
     @State private var scene: GameScene?
     @State private var onboardingStep: Int? = nil
+    @State private var gameOverVisible = false
 
     // Arcade timer bar
     @State private var timerBarStart: Date? = nil
@@ -94,7 +95,7 @@ struct GameContainerView: View {
             }
 
             // Game Over overlay (separate layer, animated)
-            if coordinator.message == "Game Over" || coordinator.message == "Time's up!" {
+            if gameOverVisible {
                 gameOverOverlay
                     .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .center)))
             }
@@ -106,6 +107,18 @@ struct GameContainerView: View {
         }
         .animation(.spring(response: 0.38, dampingFraction: 0.85), value: coordinator.message)
         .animation(.easeInOut(duration: 0.25), value: coordinator.showLevelUp)
+        .onChange(of: coordinator.message) { _, newValue in
+            if newValue == "Time's up!" {
+                gameOverVisible = true
+            } else if newValue == "Game Over" {
+                Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 400_000_000)
+                    gameOverVisible = true
+                }
+            } else {
+                gameOverVisible = false
+            }
+        }
         .onChange(of: appState.colorBlindMode) { _, newValue in
             scene?.colorBlindMode = newValue
         }
@@ -222,18 +235,22 @@ private extension GameContainerView {
         scene.cancelRoundTimer()
         scene.clearOverlays()
         timerBarStart = nil
+        gameOverVisible = false
 
         let firstRound = coordinator.startGame(in: area)
-        scene.render(round: firstRound)
-        scene.setInputEnabled(true)
+        let animDuration = scene.render(round: firstRound)
         coordinator.message = ""
 
-        if mode == .arcade, let limit = coordinator.timeLimitForRound {
-            timerBarStart = Date()
-            scene.startRoundTimer(seconds: limit) {
-                coordinator.message = "Time's up!"
-                scene.setInputEnabled(false)
-                timerBarStart = nil
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: UInt64(animDuration * 1_000_000_000))
+            scene.setInputEnabled(true)
+            if mode == .arcade, let limit = coordinator.timeLimitForRound {
+                timerBarStart = Date()
+                scene.startRoundTimer(seconds: limit) {
+                    coordinator.message = "Time's up!"
+                    scene.setInputEnabled(false)
+                    timerBarStart = nil
+                }
             }
         }
     }
@@ -446,26 +463,25 @@ private extension GameContainerView {
 
         scene.onSceneReady = { size in
             let area = playableRect(for: size)
-
             let firstRound = coordinator.startGame(in: area)
-            scene.render(round: firstRound)
-            scene.setInputEnabled(true)
+            let animDuration = scene.render(round: firstRound)
 
-            if hasSeenOnboarding == false {
-                onboardingStep = 1
-                scene.setInputEnabled(true)
-                scene.pulseDot(id: firstRound.newDotID)
-            } else {
-                onboardingStep = nil
-                scene.setInputEnabled(true)
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: UInt64(animDuration * 1_000_000_000))
 
-                if shouldPulseNewDot(forScore: firstRound.dots.count) {
+                if hasSeenOnboarding == false {
+                    onboardingStep = 1
                     scene.pulseDot(id: firstRound.newDotID)
+                } else {
+                    onboardingStep = nil
+                    if shouldPulseNewDot(forScore: firstRound.dots.count) {
+                        scene.pulseDot(id: firstRound.newDotID)
+                    }
+                    if mode == .arcade, let limit = coordinator.timeLimitForRound {
+                        startArcadeTimer(limit: limit)
+                    }
                 }
-
-                if mode == .arcade, let limit = coordinator.timeLimitForRound {
-                    startArcadeTimer(limit: limit)
-                }
+                scene.setInputEnabled(true)
             }
         }
 
@@ -495,6 +511,9 @@ private extension GameContainerView {
             switch outcome {
             case .correct(let nextRound):
                 if appState.hapticsEnabled { Haptics.correct() }
+                if let tapPos = scene.dotNode(id: tappedID)?.position {
+                    scene.showScoreFeedback(at: tapPos)
+                }
                 let score = nextRound.dots.count
 
                 let coverDuration: TimeInterval = {
@@ -509,7 +528,9 @@ private extension GameContainerView {
                     let totalDelay = coverDuration + 0.18
                     try? await Task.sleep(nanoseconds: UInt64(totalDelay * 1_000_000_000))
 
-                    scene.render(round: nextRound)
+                    let animDuration = scene.render(round: nextRound)
+
+                    // Burst and level-up visuals fire immediately after render (look good during stagger)
                     if let newNode = scene.dotNode(id: nextRound.newDotID) {
                         let colors: [UIColor] = appState.colorBlindMode
                             ? [.accessibleBlue, .accessibleAmber, .accessibleTeal, .accessibleYellow, .accessibleLavender]
@@ -526,12 +547,16 @@ private extension GameContainerView {
                         let levelColor = levelColors[(coordinator.currentLevel - 1) % levelColors.count]
                         scene.flashLevelUp(color: levelColor)
                         scene.spawnLevelUpNewDot(id: nextRound.newDotID, color: levelColor)
-                        // Dismiss banner non-blocking — game resumes immediately
                         Task { @MainActor in
                             try? await Task.sleep(nanoseconds: 1_200_000_000)
                             coordinator.showLevelUp = false
                         }
-                    } else if shouldPulseNewDot(forScore: nextRound.dots.count) {
+                    }
+
+                    // Wait for stagger to finish before enabling input
+                    try? await Task.sleep(nanoseconds: UInt64(animDuration * 1_000_000_000))
+
+                    if !isLevelUp, shouldPulseNewDot(forScore: nextRound.dots.count) {
                         scene.pulseDot(id: nextRound.newDotID)
                     }
 
@@ -577,16 +602,19 @@ private extension GameContainerView {
             Task { @MainActor in
                 try? await Task.sleep(nanoseconds: UInt64((cover + 0.18) * 1_000_000_000))
 
-                scene.render(round: nextRound)
+                let animDuration = scene.render(round: nextRound)
+                try? await Task.sleep(nanoseconds: UInt64(animDuration * 1_000_000_000))
+
                 scene.pulseDot(id: nextRound.newDotID)
-                scene.setInputEnabled(true)
 
                 if let step = onboardingStep, step < 4 {
                     onboardingStep! += 1
-                }
-                else if onboardingStep == 4 {
+                    scene.setInputEnabled(true)
+                } else if onboardingStep == 4 {
                     onboardingStep = 5
                     scene.setInputEnabled(false)
+                } else {
+                    scene.setInputEnabled(true)
                 }
             }
 

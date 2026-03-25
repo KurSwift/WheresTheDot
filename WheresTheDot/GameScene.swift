@@ -164,7 +164,10 @@ final class GameScene: SKScene {
         }
     }
 
-    func render(round: Round) {
+    /// Renders all dots for the round with a staggered entrance animation.
+    /// Returns the total animation duration so callers can delay enabling input.
+    @discardableResult
+    func render(round: Round) -> TimeInterval {
         enumerateChildNodes(withName: "dot") { node, _ in node.removeFromParent() }
         enumerateChildNodes(withName: "halo") { node, _ in node.removeFromParent() }
 
@@ -172,24 +175,25 @@ final class GameScene: SKScene {
         let baseColor = arcadeColor(for: score)
         recalculateLevelBasedOnScore(score)
 
-        // Separate old dots from the new one so we can sequence their animations
         let oldDots = round.dots.filter { $0.id != round.newDotID }
         let newDot  = round.dots.first  { $0.id == round.newDotID }
 
-        let staggerStep: TimeInterval = 0.025   // 25 ms between each old dot
+        let staggerStep: TimeInterval = 0.025
         let newDotDelay: TimeInterval = TimeInterval(oldDots.count) * staggerStep + 0.05
+        let popInDuration: TimeInterval = 0.14
 
         for (i, dot) in oldDots.enumerated() {
             let t = CGFloat(i) / CGFloat(max(score - 1, 1))
-            let alpha: CGFloat = (level == .beginner) ? (0.55 + 0.45 * t) : 0.18
-            let delay = TimeInterval(i) * staggerStep
-
-            spawnDot(dot, color: baseColor, alpha: alpha, delay: delay)
+            let alpha: CGFloat = dotAlpha(for: level, t: t)
+            spawnDot(dot, color: baseColor, alpha: alpha, delay: TimeInterval(i) * staggerStep)
         }
 
         if let dot = newDot {
-            spawnDot(dot, color: baseColor, alpha: 1.0, delay: newDotDelay)
+            // New dot uses the same alpha as the rest — timing is the only cue
+            spawnDot(dot, color: baseColor, alpha: dotAlpha(for: level, t: 1.0), delay: newDotDelay)
         }
+
+        return newDotDelay + popInDuration
     }
 
     private func spawnDot(_ dot: Dot, color: UIColor, alpha: CGFloat, delay: TimeInterval) {
@@ -325,17 +329,28 @@ final class GameScene: SKScene {
 
         let p = touch.location(in: self)
         onTapFeedback?()
-        let hitNodes = nodes(at: p)
 
-        // Find first dot hit
-        for n in hitNodes {
-            guard let shape = n as? SKShapeNode,
-                  shape.name == "dot",
-                  let idString = shape.userData?["id"] as? String,
-                  let id = UUID(uuidString: idString)
-            else { continue }
+        // Use distance-based hit detection with a tap padding buffer.
+        // This keeps the visual size unchanged while making small dots easier to tap.
+        let tapPadding: CGFloat = 8
+        let dotNodes = children.compactMap { $0 as? SKShapeNode }.filter { $0.name == "dot" }
+
+        // Pick the closest dot within tap range (avoids ambiguity when dots are near each other)
+        let hit = dotNodes
+            .compactMap { node -> (SKShapeNode, CGFloat)? in
+                guard let radius = node.userData?["radius"] as? CGFloat else { return nil }
+                let dx = p.x - node.position.x
+                let dy = p.y - node.position.y
+                let dist = sqrt(dx * dx + dy * dy)
+                return dist <= radius + tapPadding ? (node, dist) : nil
+            }
+            .min(by: { $0.1 < $1.1 })?
+            .0
+
+        if let shape = hit,
+           let idString = shape.userData?["id"] as? String,
+           let id = UUID(uuidString: idString) {
             onDotTapped?(id)
-            break
         }
     }
     
@@ -449,7 +464,39 @@ final class GameScene: SKScene {
         flash.run(.sequence([fadeIn, hold, fadeOut, .removeFromParent()]))
     }
 
+    // MARK: - Score Feedback
+
+    func showScoreFeedback(at point: CGPoint) {
+        let label = SKLabelNode(text: "+1")
+        label.fontSize = 26
+        label.fontName = "AvenirNext-Bold"
+        label.fontColor = .white
+        label.position = point
+        label.zPosition = 5000
+        label.alpha = 0
+        addChild(label)
+
+        let appear  = SKAction.fadeAlpha(to: 0.9, duration: 0.08)
+        let moveUp  = SKAction.moveBy(x: 0, y: 60, duration: 0.6)
+        moveUp.timingMode = .easeOut
+        let hold    = SKAction.wait(forDuration: 0.2)
+        let fadeOut = SKAction.fadeOut(withDuration: 0.35)
+        label.run(.group([
+            moveUp,
+            .sequence([appear, hold, fadeOut, .removeFromParent()])
+        ]))
+    }
+
     // MARK: - Color Helpers
+
+    private func dotAlpha(for level: GameLevel, t: CGFloat) -> CGFloat {
+        switch level {
+        case .beginner:   return 0.55 + 0.45 * t
+        case .medium:     return 0.22
+        case .hard:       return 0.16
+        case .impossible: return 0.11
+        }
+    }
 
     private func arcadeColor(for score: Int) -> UIColor {
         let colors = colorBlindMode
