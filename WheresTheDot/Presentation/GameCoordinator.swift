@@ -74,6 +74,7 @@ final class GameCoordinator: ObservableObject {
             timeLimitForRound = nil
             let duration = gameStartedAt.map { Date().timeIntervalSince($0) } ?? 0
             FirebaseEventsManager.logGameEnded(duration: duration, score: gameOverScore, mode: mode)
+            GameCenterManager.shared.submitScore(gameOverScore, for: mode)
             gameStartedAt = nil
         }
         return outcome
