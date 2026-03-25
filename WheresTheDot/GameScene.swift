@@ -171,53 +171,54 @@ final class GameScene: SKScene {
         let score = round.dots.count
         let baseColor = arcadeColor(for: score)
         recalculateLevelBasedOnScore(score)
-        for (i, dot) in round.dots.enumerated() {
-            // Older dots slightly dimmer (arcade depth)
+
+        // Separate old dots from the new one so we can sequence their animations
+        let oldDots = round.dots.filter { $0.id != round.newDotID }
+        let newDot  = round.dots.first  { $0.id == round.newDotID }
+
+        let staggerStep: TimeInterval = 0.025   // 25 ms between each old dot
+        let newDotDelay: TimeInterval = TimeInterval(oldDots.count) * staggerStep + 0.05
+
+        for (i, dot) in oldDots.enumerated() {
             let t = CGFloat(i) / CGFloat(max(score - 1, 1))
-            var alpha: CGFloat = 1.0
-            switch level {
-            case .beginner:
-                alpha = 0.55 + 0.45 * t
-            case .medium:
-                alpha = 0.18
-            case .hard:
-                alpha = 0.18
-            case .impossible:
-                alpha = 0.18
-            }
+            let alpha: CGFloat = (level == .beginner) ? (0.55 + 0.45 * t) : 0.18
+            let delay = TimeInterval(i) * staggerStep
 
-            // Halo (glow)
-            let halo = SKShapeNode(circleOfRadius: dot.radius * 1.8)
-            halo.name = "halo"
-            halo.position = dot.position
-            halo.fillColor = baseColor.withAlphaComponent(alpha)
-            halo.strokeColor = .clear
-            halo.blendMode = .add
-            halo.zPosition = 0
-            addChild(halo)
-
-            // Dot
-            let node = SKShapeNode(circleOfRadius: dot.radius)
-            node.name = "dot"
-            node.position = dot.position
-            node.fillColor = baseColor
-            node.strokeColor = .clear
-            node.blendMode = .add
-            node.zPosition = 1
-            node.userData = ["id": dot.id.uuidString, "radius": dot.radius]
-            addChild(node)
-
-            // Pop-in
-            node.setScale(0.0)
-            halo.setScale(0.0)
-            let pop = SKAction.scale(to: 1.0, duration: 0.14)
-            pop.timingMode = .easeOut
-            node.run(pop)
-            halo.run(pop)
+            spawnDot(dot, color: baseColor, alpha: alpha, delay: delay)
         }
 
-        // Make newest dot slightly “hotter” (but not a pulse cue forever)
-        //emphasizeNewDot(round.newDotID)
+        if let dot = newDot {
+            spawnDot(dot, color: baseColor, alpha: 1.0, delay: newDotDelay)
+        }
+    }
+
+    private func spawnDot(_ dot: Dot, color: UIColor, alpha: CGFloat, delay: TimeInterval) {
+        let halo = SKShapeNode(circleOfRadius: dot.radius * 1.8)
+        halo.name = "halo"
+        halo.position = dot.position
+        halo.fillColor = color.withAlphaComponent(alpha)
+        halo.strokeColor = .clear
+        halo.blendMode = .add
+        halo.zPosition = 0
+        halo.setScale(0.0)
+        addChild(halo)
+        
+        let node = SKShapeNode(circleOfRadius: dot.radius)
+        node.name = "dot"
+        node.position = dot.position
+        node.fillColor = color
+        node.strokeColor = .clear
+        node.blendMode = .add
+        node.zPosition = 1
+        node.userData = ["id": dot.id.uuidString, "radius": dot.radius]
+        node.setScale(0.0)
+        addChild(node)
+
+        let pop = SKAction.scale(to: 1.0, duration: 0.14)
+        pop.timingMode = .easeOut
+        let wait = SKAction.wait(forDuration: delay)
+        node.run(.sequence([wait, pop]))
+        halo.run(.sequence([wait, pop]))
     }
 
     private func emphasizeNewDot(_ id: UUID) {
