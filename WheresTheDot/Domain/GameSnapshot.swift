@@ -16,6 +16,7 @@ struct GameSnapshot: Equatable {
     
     var radius: CGFloat
     var minDistance: CGFloat
+    var radiusVariation: CGFloat = 0
 
     var score: Int { dots.count } // score = number of dots on screen
     var level: LevelState?

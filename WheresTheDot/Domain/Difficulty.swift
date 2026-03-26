@@ -14,6 +14,8 @@ struct Difficulty: Equatable {
     var showTime: TimeInterval
     var minDistance: CGFloat
     var timeLimit: TimeInterval?
+    /// Max deviation from the base radius when sizing a new dot (0 = uniform).
+    var radiusVariation: CGFloat = 0
 }
 
 enum PlayerAction: Equatable {
