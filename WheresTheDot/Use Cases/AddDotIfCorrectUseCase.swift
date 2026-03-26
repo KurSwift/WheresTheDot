@@ -22,7 +22,8 @@ struct AddDotIfCorrectUseCase {
         var snap = repo.load()
 
         let baseRadius = snap.radius
-        let jitter = CGFloat.random(in: -2...2)
+        let variation = snap.radiusVariation > 0 ? snap.radiusVariation : 2
+        let jitter = CGFloat.random(in: -variation...variation)
         let newRadius = max(8, baseRadius + jitter)
 
         guard !snap.isGameOver, let newID = snap.newDotID else {
@@ -41,7 +42,7 @@ struct AddDotIfCorrectUseCase {
         let newPos = layout.generateNewPosition(
             existing: existingPositions,
             in: area,
-            radius: snap.radius,
+            radius: newRadius,       // use actual radius for correct bounds inset
             minDistance: snap.minDistance
         ) ?? CGPoint(x: area.midX, y: area.midY)
 
@@ -58,6 +59,7 @@ struct AddDotIfCorrectUseCase {
             let difficulty = progression.difficulty(for: levelState.level)
             snap.radius = difficulty.radius
             snap.minDistance = difficulty.minDistance
+            snap.radiusVariation = difficulty.radiusVariation
             snap.level = levelState
             snap.difficulty = difficulty
         }
