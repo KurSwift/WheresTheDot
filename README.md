@@ -1,4 +1,4 @@
-# Where's The Dot?
+# Last Dot
 
 A fast-paced iOS memory game where you race to find the newest dot on the screen. Each round adds one more — tap the wrong one and it's game over.
 
