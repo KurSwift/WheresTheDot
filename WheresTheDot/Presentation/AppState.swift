@@ -56,6 +56,10 @@ final class AppState: ObservableObject {
         route = .themes
     }
 
+    func openAdmin() {
+        route = .admin
+    }
+
     // MARK: - Helpers
 
     var isInGame: Bool {

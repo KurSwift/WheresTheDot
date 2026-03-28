@@ -16,7 +16,7 @@ struct CheckThemeUnlocksUseCase {
 
         var newlyUnlocked: [Theme] = []
         for theme in Theme.all {
-            guard let milestone = theme.unlockScore else { continue }
+            guard let milestone = RemoteConfigManager.shared.milestone(for: theme.id) else { continue }
             if !before.contains(theme.id) && total >= milestone {
                 repo.markUnlocked(theme.id)
                 newlyUnlocked.append(theme)

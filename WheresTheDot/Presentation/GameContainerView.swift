@@ -154,8 +154,9 @@ struct GameContainerView: View {
             scene?.colorBlindMode = newValue
         }
         .onAppear {
-            onboardingIntroVisible = !hasSeenOnboarding
-            if !hasSeenOnboarding {
+            let showOnboarding = !hasSeenOnboarding && RemoteConfigManager.shared.onboardingEnabled
+            onboardingIntroVisible = showOnboarding
+            if showOnboarding {
                 FirebaseEventsManager.logOnboardingStarted()
             }
             GKAccessPoint.shared.isActive = false
@@ -605,11 +606,8 @@ private extension GameContainerView {
                 }
                 let score = nextRound.dots.count
 
-                let coverDuration: TimeInterval = {
-                    if score <= 5  { return 0.45 }
-                    if score <= 12 { return 0.65 }
-                    return 0.65
-                }()
+                let baseCover = RemoteConfigManager.shared.memoryCoverDuration
+                let coverDuration: TimeInterval = score <= 5 ? baseCover : baseCover + 0.2
 
                 scene.showMemoryCover(duration: coverDuration)
 
