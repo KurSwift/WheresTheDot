@@ -13,7 +13,10 @@ struct ThemeCardView: View {
     let onSelect: () -> Void
 
     var body: some View {
-        Button(action: onSelect) {
+        Button(action: {
+            FirebaseEventsManager.logThemeSelected(theme.id)
+            onSelect()
+        }) {
             VStack(spacing: 12) {
                 dotPreview
                     .frame(height: 48)

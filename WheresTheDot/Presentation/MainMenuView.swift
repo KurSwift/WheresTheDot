@@ -69,6 +69,7 @@ struct MainMenuView: View {
             .padding(10)
 
             Button {
+                FirebaseEventsManager.logThemesOpened()
                 appState.openThemes()
             } label: {
                 HStack(spacing: 0) {
@@ -96,6 +97,7 @@ struct MainMenuView: View {
 
             if gameCenter.isAuthenticated {
                 Button {
+                    FirebaseEventsManager.logLeaderboardOpened()
                     GameCenterManager.shared.presentLeaderboards()
                 } label: {
                     HStack(spacing: 0) {

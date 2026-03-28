@@ -42,7 +42,10 @@ struct OnboardingIntroView: View {
 
                 Spacer()
 
-                Button("Got it — Let's Play", action: onDismiss)
+                Button("Got it — Let's Play") {
+                    FirebaseEventsManager.logOnboardingIntroDismissed()
+                    onDismiss()
+                }
                     .buttonStyle(DottoButtonStyle(kind: .classic))
                     .padding(.horizontal, 40)
                     .padding(.bottom, 52)
