@@ -139,6 +139,7 @@ struct GameContainerView: View {
         .animation(.spring(response: 0.45, dampingFraction: 0.82), value: unlockBannerVisible)
         .onChange(of: coordinator.message) { _, newValue in
             if newValue == "Time's up!" {
+                FirebaseEventsManager.logGameOver(reason: .timeUp, score: coordinator.score, mode: mode)
                 gameOverVisible = true
             } else if newValue == "Game Over" {
                 Task { @MainActor in
@@ -154,6 +155,9 @@ struct GameContainerView: View {
         }
         .onAppear {
             onboardingIntroVisible = !hasSeenOnboarding
+            if !hasSeenOnboarding {
+                FirebaseEventsManager.logOnboardingStarted()
+            }
             GKAccessPoint.shared.isActive = false
             guard appState.soundEnabled else { return }
             AudioManager.shared.startBackgroundMusic(filename: "gLoop2", ext: "wav")
@@ -347,13 +351,17 @@ private extension GameContainerView {
     private var topControls: some View {
         VStack {
             HStack(alignment: .top) {
-                Button { appState.goHome() } label: {
+                Button {
+                    FirebaseEventsManager.logGameQuit(score: coordinator.score, mode: mode)
+                    appState.goHome()
+                } label: {
                     Image(systemName: "xmark").padding(12)
                 }
                 .buttonStyle(.borderedProminent)
 
                 if onboardingStep != nil {
                     Button {
+                        FirebaseEventsManager.logOnboardingSkipped(atStep: onboardingStep ?? 0)
                         hasSeenOnboarding = true
                         onboardingStep = nil
                         restartGame()
@@ -493,6 +501,7 @@ private extension GameContainerView {
                     .foregroundStyle(.secondary)
 
                 Button {
+                    FirebaseEventsManager.logOnboardingCompleted()
                     hasSeenOnboarding = true
                     onboardingStep = nil
                     restartGame()
@@ -656,9 +665,11 @@ private extension GameContainerView {
                 scene.showOutcome(.wrong(chosenID: tappedID, newDotID: correctDotID))
                 scene.setInputEnabled(false)
                 timerBarStart = nil
+                FirebaseEventsManager.logGameOver(reason: .wrongTap, score: coordinator.score, mode: mode)
 
                 let unlocked = appState.checkThemeUnlocks(score: coordinator.score)
                 if !unlocked.isEmpty {
+                    unlocked.forEach { FirebaseEventsManager.logThemeUnlocked($0.id) }
                     newlyUnlockedThemes = unlocked
                     unlockBannerVisible = true
                     Task { @MainActor in
