@@ -19,7 +19,7 @@ enum ThemeID: String, CaseIterable, Codable {
 
 struct Theme {
     let id: ThemeID
-    let name: String
+    let name: LocalizedStringResource
     /// nil = always unlocked
     let unlockScore: Int?
     /// Dark base color for the scene/screen background
@@ -39,7 +39,7 @@ struct Theme {
 extension Theme {
     static let neon = Theme(
         id: .neon,
-        name: "Neon",
+        name: "Neon" as LocalizedStringResource,
         unlockScore: nil,
         backgroundColor: Color(UIColor(hex: "#05060A")),
         gridColor: .neonCyan,
@@ -49,7 +49,7 @@ extension Theme {
 
     static let forest = Theme(
         id: .forest,
-        name: "Forest",
+        name: "Forest" as LocalizedStringResource,
         unlockScore: 50,
         backgroundColor: Color(UIColor(hex: "#050D07")),
         gridColor: Color(UIColor(hex: "#4ADE80")),
@@ -65,7 +65,7 @@ extension Theme {
 
     static let ocean = Theme(
         id: .ocean,
-        name: "Ocean",
+        name: "Ocean" as LocalizedStringResource,
         unlockScore: 150,
         backgroundColor: Color(UIColor(hex: "#03080F")),
         gridColor: Color(UIColor(hex: "#22D3EE")),
@@ -81,7 +81,7 @@ extension Theme {
 
     static let cosmos = Theme(
         id: .cosmos,
-        name: "Cosmos",
+        name: "Cosmos" as LocalizedStringResource,
         unlockScore: 350,
         backgroundColor: Color(UIColor(hex: "#080510")),
         gridColor: Color(UIColor(hex: "#A855F7")),
