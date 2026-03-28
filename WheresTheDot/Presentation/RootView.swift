@@ -23,6 +23,8 @@ struct RootView: View {
                 SettingsView()
             case .themes:
                 ThemesView()
+            case .admin:
+                AdminView()
             }
         }
         .environmentObject(appState)

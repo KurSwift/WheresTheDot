@@ -9,14 +9,19 @@ final class UserDefaultsThemeRepository: ThemeRepository {
     private let defaults = UserDefaults.standard
 
     private enum Keys {
-        static let activeThemeID    = "theme.activeThemeID"
-        static let unlockedThemeIDs = "theme.unlockedThemeIDs"
-        static let cumulativeScore  = "theme.cumulativeScore"
+        static let activeThemeID      = "theme.activeThemeID"
+        static let unlockedThemeIDs   = "theme.unlockedThemeIDs"
+        static let cumulativeScore    = "theme.cumulativeScore"
+        static let userHasSetTheme    = "theme.userHasSetTheme"
     }
 
     var activeThemeID: ThemeID {
-        guard let raw = defaults.string(forKey: Keys.activeThemeID),
-              let id = ThemeID(rawValue: raw) else { return .neon }
+        // If the user has never explicitly picked a theme, use the remote default.
+        guard defaults.bool(forKey: Keys.userHasSetTheme),
+              let raw = defaults.string(forKey: Keys.activeThemeID),
+              let id = ThemeID(rawValue: raw) else {
+            return RemoteConfigManager.shared.defaultTheme
+        }
         return id
     }
 
@@ -33,6 +38,7 @@ final class UserDefaultsThemeRepository: ThemeRepository {
 
     func setActiveTheme(_ id: ThemeID) {
         defaults.set(id.rawValue, forKey: Keys.activeThemeID)
+        defaults.set(true, forKey: Keys.userHasSetTheme)
     }
 
     func addCumulativeScore(_ score: Int) {

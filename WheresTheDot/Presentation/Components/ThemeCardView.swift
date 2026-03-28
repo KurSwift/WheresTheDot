@@ -77,7 +77,7 @@ struct ThemeCardView: View {
 
     private var lockInfo: some View {
         VStack(spacing: 6) {
-            let milestone = theme.unlockScore ?? 0
+            let milestone = RemoteConfigManager.shared.milestone(for: theme.id) ?? 0
             let progress = min(1.0, Double(cumulativeScore) / Double(milestone))
 
             Text("Earn \(milestone) lifetime pts")

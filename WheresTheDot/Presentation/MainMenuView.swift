@@ -57,16 +57,18 @@ struct MainMenuView: View {
             .buttonStyle(DottoButtonStyle(kind: .classic))
             .padding(10)
 
-            Button {
-                FirebaseEventsManager.logGameModeSelected(.arcade)
-                appState.startGame(mode: .arcade)
-            } label: {
-                Text("Arcade Mode")
-                    .bold()
-                    .padding()
+            if RemoteConfigManager.shared.arcadeModeEnabled {
+                Button {
+                    FirebaseEventsManager.logGameModeSelected(.arcade)
+                    appState.startGame(mode: .arcade)
+                } label: {
+                    Text("Arcade Mode")
+                        .bold()
+                        .padding()
+                }
+                .buttonStyle(DottoButtonStyle(kind: .arcade))
+                .padding(10)
             }
-            .buttonStyle(DottoButtonStyle(kind: .arcade))
-            .padding(10)
 
             Button {
                 FirebaseEventsManager.logThemesOpened()
@@ -117,9 +119,34 @@ struct MainMenuView: View {
     }
 
     private var footer: some View {
-        Text("SKLabs")
-            .font(.footnote)
-            .foregroundStyle(Color.white)
+        HStack {
+            if AdminConfig.isEnabled {
+                Button {
+                    appState.openAdmin()
+                } label: {
+                    Image(systemName: "wrench.and.screwdriver.fill")
+                        .font(.footnote)
+                        .foregroundStyle(Color.neonOrange)
+                }
+                .buttonStyle(.plain)
+            }
+
+            Spacer()
+
+            Text("SKLabs")
+                .font(.footnote)
+                .foregroundStyle(Color.white)
+
+            Spacer()
+
+            if AdminConfig.isEnabled {
+                // Balance the layout
+                Image(systemName: "wrench.and.screwdriver.fill")
+                    .font(.footnote)
+                    .hidden()
+            }
+        }
+        .padding(.horizontal, 24)
     }
 
 

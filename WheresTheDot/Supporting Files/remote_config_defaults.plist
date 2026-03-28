@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Gameplay -->
+    <key>arcade_time_limit_base</key>
+    <real>2.5</real>
+
+    <key>arcade_difficulty_step</key>
+    <integer>5</integer>
+
+    <key>memory_cover_duration</key>
+    <real>0.45</real>
+
+    <!-- Onboarding & Feature Flags -->
+    <key>onboarding_enabled</key>
+    <true/>
+
+    <key>arcade_mode_enabled</key>
+    <true/>
+
+    <!-- Themes -->
+    <key>default_theme</key>
+    <string>neon</string>
+
+    <key>theme_forest_milestone</key>
+    <integer>50</integer>
+
+    <key>theme_ocean_milestone</key>
+    <integer>150</integer>
+
+    <key>theme_cosmos_milestone</key>
+    <integer>350</integer>
+</dict>
+</plist>
