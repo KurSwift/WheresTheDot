@@ -29,6 +29,7 @@ final class AppState: ObservableObject {
     lazy var checkThemeUnlocks = CheckThemeUnlocksUseCase(repo: themeRepo)
 
     func setActiveTheme(_ id: ThemeID) {
+        guard themeRepo.unlockedThemeIDs.contains(id) else { return }
         themeRepo.setActiveTheme(id)
         activeThemeIDRaw = id.rawValue
     }

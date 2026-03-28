@@ -44,7 +44,7 @@ struct ThemeCardView: View {
             )
             .shadow(color: isActive ? theme.accentColor.opacity(0.25) : .clear, radius: 12)
         }
-        .disabled(isActive)
+        .disabled(isActive || !isUnlocked)
         .buttonStyle(.plain)
     }
 
@@ -77,7 +77,7 @@ struct ThemeCardView: View {
             let milestone = theme.unlockScore ?? 0
             let progress = min(1.0, Double(cumulativeScore) / Double(milestone))
 
-            Text("Score \(milestone) to unlock")
+            Text("Earn \(milestone) lifetime pts")
                 .font(.system(size: 10, design: .rounded))
                 .foregroundStyle(.white.opacity(0.4))
 
@@ -92,7 +92,7 @@ struct ThemeCardView: View {
             }
             .frame(height: 3)
 
-            Text("\(cumulativeScore) / \(milestone)")
+            Text("Total: \(cumulativeScore) / \(milestone)")
                 .font(.system(size: 10, design: .monospaced))
                 .foregroundStyle(.white.opacity(0.3))
         }
