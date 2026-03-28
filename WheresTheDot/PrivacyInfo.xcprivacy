@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+
+    <!--
+        NSPrivacyTracking
+        The app does NOT track users across apps or websites owned by other companies
+        for advertising or advertising measurement purposes.
+    -->
+    <key>NSPrivacyTracking</key>
+    <false/>
+
+    <!--
+        NSPrivacyTrackingDomains
+        No domains are used for tracking.
+    -->
+    <key>NSPrivacyTrackingDomains</key>
+    <array/>
+
+    <!--
+        NSPrivacyAccessedAPITypes
+        APIs accessed by this app that require a declared reason.
+    -->
+    <key>NSPrivacyAccessedAPITypes</key>
+    <array>
+
+        <!--
+            UserDefaults — used to persist:
+            • User preferences (sound, haptics, color blind mode, onboarding state) via @AppStorage
+            • Active theme and unlocked themes (UserDefaultsThemeRepository)
+            • Cumulative lifetime score (UserDefaultsThemeRepository)
+            • Remote Config local overrides for the admin panel (RemoteConfigManager)
+
+            Reason CA92.1: The app reads and writes data from its own UserDefaults.
+        -->
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <string>CA92.1</string>
+            </array>
+        </dict>
+
+    </array>
+
+    <!--
+        NSPrivacyCollectedDataTypes
+        Data collected by this app (including via Firebase Analytics).
+        Firebase's own SDK privacy manifest covers Firebase's internal API usage;
+        this manifest declares what the app collects at the product level.
+    -->
+    <key>NSPrivacyCollectedDataTypes</key>
+    <array>
+
+        <!--
+            Device ID
+            Firebase Analytics assigns a Firebase Installation ID — a randomly generated,
+            app-scoped identifier. It is not linked to the user's real identity and is
+            not used for advertising or cross-app tracking.
+        -->
+        <dict>
+            <key>NSPrivacyCollectedDataType</key>
+            <string>NSPrivacyCollectedDataTypeDeviceID</string>
+            <key>NSPrivacyCollectedDataTypeLinked</key>
+            <false/>
+            <key>NSPrivacyCollectedDataTypeTracking</key>
+            <false/>
+            <key>NSPrivacyCollectedDataTypePurposes</key>
+            <array>
+                <string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
+            </array>
+        </dict>
+
+        <!--
+            Other Usage Data
+            Firebase Analytics events describing gameplay behaviour:
+            game mode chosen, score, game duration, theme selected/unlocked,
+            onboarding funnel steps, settings toggles (sound, haptics, color blind mode).
+            No personally identifiable information is included in any event parameter.
+        -->
+        <dict>
+            <key>NSPrivacyCollectedDataType</key>
+            <string>NSPrivacyCollectedDataTypeOtherUsageData</string>
+            <key>NSPrivacyCollectedDataTypeLinked</key>
+            <false/>
+            <key>NSPrivacyCollectedDataTypeTracking</key>
+            <false/>
+            <key>NSPrivacyCollectedDataTypePurposes</key>
+            <array>
+                <string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
+            </array>
+        </dict>
+
+    </array>
+
+</dict>
+</plist>

@@ -27,7 +27,6 @@ struct MainMenuView: View {
             }
         }
         .onAppear {
-            print("[MainMenuView] onAppear — isAuthenticated: \(GameCenterManager.shared.isAuthenticated)")
             GameCenterManager.shared.authenticateLocalPlayer()
         }
     }
