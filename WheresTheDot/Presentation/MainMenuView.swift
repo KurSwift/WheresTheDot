@@ -14,7 +14,7 @@ struct MainMenuView: View {
 
     var body: some View {
         ZStack {
-            NeonGridBackground()
+            NeonGridBackground(color: appState.currentTheme.gridColor, backgroundColor: appState.currentTheme.backgroundColor)
             VStack {
                 AnimatedDotsView()
                 Spacer()
@@ -66,6 +66,21 @@ struct MainMenuView: View {
                     .padding()
             }
             .buttonStyle(DottoButtonStyle(kind: .arcade))
+            .padding(10)
+
+            Button {
+                appState.openThemes()
+            } label: {
+                HStack(spacing: 0) {
+                    Text("Themes")
+                        .bold()
+                        .padding()
+                    Image(systemName: "paintpalette.fill")
+                        .bold()
+                        .padding()
+                }
+            }
+            .buttonStyle(DottoButtonStyle(kind: .options))
             .padding(10)
 
             Button {

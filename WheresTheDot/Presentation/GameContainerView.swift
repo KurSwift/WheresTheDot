@@ -23,6 +23,8 @@ struct GameContainerView: View {
 
     // Arcade timer bar
     @State private var timerBarStart: Date? = nil
+    @State private var newlyUnlockedThemes: [Theme] = []
+    @State private var unlockBannerVisible = false
 
     private var onboardingText: LocalizedStringResource? {
         switch onboardingStep {
@@ -95,6 +97,16 @@ struct GameContainerView: View {
                     .allowsHitTesting(false)
             }
 
+            // Theme unlock banner
+            if unlockBannerVisible, let theme = newlyUnlockedThemes.first {
+                themeUnlockBanner(theme: theme)
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .bottom).combined(with: .opacity),
+                        removal: .opacity
+                    ))
+                    .allowsHitTesting(false)
+            }
+
             // Onboarding progress indicator (steps 1-4)
             if let step = onboardingStep, (1...4).contains(step) {
                 onboardingProgressIndicator(current: step)
@@ -124,6 +136,7 @@ struct GameContainerView: View {
         .animation(.easeInOut(duration: 0.4), value: onboardingIntroVisible)
         .animation(.spring(response: 0.38, dampingFraction: 0.85), value: coordinator.message)
         .animation(.easeInOut(duration: 0.25), value: coordinator.showLevelUp)
+        .animation(.spring(response: 0.45, dampingFraction: 0.82), value: unlockBannerVisible)
         .onChange(of: coordinator.message) { _, newValue in
             if newValue == "Time's up!" {
                 gameOverVisible = true
@@ -418,6 +431,33 @@ private extension GameContainerView {
         }
     }
 
+    private func themeUnlockBanner(theme: Theme) -> some View {
+        VStack {
+            Spacer()
+            HStack(spacing: 12) {
+                Image(systemName: "paintpalette.fill")
+                    .foregroundStyle(theme.accentColor)
+                    .font(.system(size: 18, weight: .bold))
+                    .shadow(color: theme.accentColor.opacity(0.8), radius: 8)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Theme Unlocked!")
+                        .font(.system(size: 13, weight: .black, design: .rounded))
+                        .foregroundStyle(.white)
+                    Text(theme.name)
+                        .font(.system(size: 11, design: .rounded))
+                        .foregroundStyle(theme.accentColor)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .background(.ultraThinMaterial)
+            .clipShape(Capsule())
+            .overlay(Capsule().stroke(theme.accentColor.opacity(0.4), lineWidth: 1))
+            .shadow(color: theme.accentColor.opacity(0.25), radius: 16)
+            .padding(.bottom, 48)
+        }
+    }
+
     private func onboardingProgressIndicator(current: Int) -> some View {
         VStack {
             HStack(spacing: 8) {
@@ -483,6 +523,9 @@ private extension GameContainerView {
         let scene = GameScene(size: .zero)
         scene.scaleMode = .resizeFill
         scene.colorBlindMode = appState.colorBlindMode
+        scene.themeColors = appState.currentTheme.dotColors
+        scene.themeGridColor = UIColor(appState.currentTheme.gridColor)
+        scene.themeBackgroundColor = UIColor(appState.currentTheme.backgroundColor)
 
         func playableRect(for sceneSize: CGSize) -> CGRect {
             CGRect(origin: .zero, size: sceneSize)
@@ -613,6 +656,16 @@ private extension GameContainerView {
                 scene.showOutcome(.wrong(chosenID: tappedID, newDotID: correctDotID))
                 scene.setInputEnabled(false)
                 timerBarStart = nil
+
+                let unlocked = appState.checkThemeUnlocks(score: coordinator.score)
+                if !unlocked.isEmpty {
+                    newlyUnlockedThemes = unlocked
+                    unlockBannerVisible = true
+                    Task { @MainActor in
+                        try? await Task.sleep(nanoseconds: 3_500_000_000)
+                        unlockBannerVisible = false
+                    }
+                }
             }
         }
 
