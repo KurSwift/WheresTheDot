@@ -7,5 +7,5 @@
 //
 
 enum AdminConfig {
-    static let isEnabled: Bool = true
+    static let isEnabled: Bool = false
 }
