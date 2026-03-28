@@ -11,6 +11,7 @@ enum AppRoute: Equatable {
     case mainMenu
     case game(GameMode)
     case settings
+    case themes
 }
 
 enum GameMode: Equatable, Hashable {

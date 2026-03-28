@@ -20,6 +20,16 @@ final class GameScene: SKScene {
     
     var level: GameLevel = .beginner
     var colorBlindMode: Bool = false
+    /// Theme dot palette — set before each game. Falls back to neon if not set.
+    var themeColors: [UIColor] = [.neonCyan, .neonPink, .neonPurple, .neonLime, .neonOrange]
+    /// Theme grid color — triggers a grid rebuild when set.
+    var themeGridColor: UIColor = .neonCyan {
+        didSet { rebuildGrid() }
+    }
+    /// Theme background color — applied directly to the SKScene background.
+    var themeBackgroundColor: UIColor = UIColor(hex: "#05060A") {
+        didSet { backgroundColor = themeBackgroundColor }
+    }
 
     // MARK: - Init
 
@@ -45,7 +55,7 @@ final class GameScene: SKScene {
         // If you created with .init(size:), this is already correct.
         // But keeping it safe in case the view resizes:
         self.size = view.bounds.size
-        backgroundColor = .black
+        backgroundColor = themeBackgroundColor
         let tap = SKAction.playSoundFileNamed("tap.wav", waitForCompletion: false)
         run(.sequence([tap, .wait(forDuration: 0.01)]))
 
@@ -88,8 +98,8 @@ final class GameScene: SKScene {
             let container = SKNode()
 
             // Colors / glow vibe
-            let minorColor = UIColor.neonCyan.withAlphaComponent(0.08)
-            let majorColor = UIColor.neonCyan.withAlphaComponent(0.14)
+            let minorColor = themeGridColor.withAlphaComponent(0.08)
+            let majorColor = themeGridColor.withAlphaComponent(0.14)
 
             // Draw vertical lines
             let cols = Int(ceil(size.width / spacing))
@@ -533,7 +543,7 @@ final class GameScene: SKScene {
     private func arcadeColor(for score: Int) -> UIColor {
         let colors = colorBlindMode
             ? [UIColor.accessibleBlue, .accessibleAmber, .accessibleTeal, .accessibleYellow, .accessibleLavender]
-            : [UIColor.neonCyan, .neonPink, .neonPurple, .neonLime, .neonOrange]
+            : themeColors
         return colors[(max(1, score) - 1) % colors.count]
     }
 

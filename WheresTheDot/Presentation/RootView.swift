@@ -21,6 +21,8 @@ struct RootView: View {
                 GameContainerView(mode: mode)
             case .settings:
                 SettingsView()
+            case .themes:
+                ThemesView()
             }
         }
         .environmentObject(appState)

@@ -16,10 +16,27 @@ final class AppState: ObservableObject {
     @AppStorage("soundEnabled") var soundEnabled: Bool = true
     @AppStorage("colorBlindMode") var colorBlindMode: Bool = false
 
+    // MARK: - Theme
+
+    let themeRepo: ThemeRepository = UserDefaultsThemeRepository()
+
+    @AppStorage("activeThemeID") private var activeThemeIDRaw: String = ThemeID.neon.rawValue
+
+    var currentTheme: Theme {
+        Theme.theme(for: ThemeID(rawValue: activeThemeIDRaw) ?? .neon)
+    }
+
+    lazy var checkThemeUnlocks = CheckThemeUnlocksUseCase(repo: themeRepo)
+
+    func setActiveTheme(_ id: ThemeID) {
+        guard themeRepo.unlockedThemeIDs.contains(id) else { return }
+        themeRepo.setActiveTheme(id)
+        activeThemeIDRaw = id.rawValue
+    }
+
     // MARK: - Navigation
 
     @Published private(set) var route: AppRoute = .mainMenu
-
 
     // MARK: - Navigation API
 
@@ -33,6 +50,10 @@ final class AppState: ObservableObject {
 
     func openSettings() {
         route = .settings
+    }
+
+    func openThemes() {
+        route = .themes
     }
 
     // MARK: - Helpers

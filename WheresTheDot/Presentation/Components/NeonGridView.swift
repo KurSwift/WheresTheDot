@@ -15,6 +15,7 @@ struct NeonGridBackground: View {
     var majorLineWidth: CGFloat = 1.5
 
     var color: Color = .neonCyan
+    var backgroundColor: Color = .dottoBlack
     var minorOpacity: Double = 0.08
     var majorOpacity: Double = 0.14
 
@@ -63,7 +64,7 @@ struct NeonGridBackground: View {
                                           radius: glowRadius + 2, x: 0, y: 0))
                 context.stroke(major, with: .color(color.opacity(majorOpacity)), lineWidth: majorLineWidth)
             }
-            .background(Color.dottoBlack) // your background
+            .background(backgroundColor)
             .ignoresSafeArea()
         }
         .allowsHitTesting(false)
