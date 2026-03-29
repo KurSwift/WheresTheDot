@@ -46,9 +46,22 @@
 		6E31387B2F392F5A00FFF3C2 /* WheresTheDotUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WheresTheDotUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		6EC26D822F785EB2004DA024 /* Exceptions for "WheresTheDot" folder in "WheresTheDotUITests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"Supporting Files/GoogleService-Info.plist",
+			);
+			target = 6E31387A2F392F5A00FFF3C2 /* WheresTheDotUITests */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		6E31385A2F392F5800FFF3C2 /* WheresTheDot */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				6EC26D822F785EB2004DA024 /* Exceptions for "WheresTheDot" folder in "WheresTheDotUITests" target */,
+			);
 			path = WheresTheDot;
 			sourceTree = "<group>";
 		};
