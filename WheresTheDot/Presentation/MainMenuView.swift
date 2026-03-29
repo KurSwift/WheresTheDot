@@ -53,6 +53,7 @@ struct MainMenuView: View {
                 }
 
             }
+            .accessibilityIdentifier("btn_classic_mode")
             .buttonStyle(DottoButtonStyle(kind: .classic))
             .padding(10)
 
@@ -65,6 +66,7 @@ struct MainMenuView: View {
                         .bold()
                         .padding()
                 }
+                .accessibilityIdentifier("btn_arcade_mode")
                 .buttonStyle(DottoButtonStyle(kind: .arcade))
                 .padding(10)
             }
@@ -82,6 +84,7 @@ struct MainMenuView: View {
                         .padding()
                 }
             }
+            .accessibilityIdentifier("btn_themes")
             .buttonStyle(DottoButtonStyle(kind: .options))
             .padding(10)
 
@@ -93,6 +96,7 @@ struct MainMenuView: View {
                     .bold()
                     .padding()
             }
+            .accessibilityIdentifier("btn_options")
             .buttonStyle(DottoButtonStyle(kind: .options))
             .padding(10)
 
