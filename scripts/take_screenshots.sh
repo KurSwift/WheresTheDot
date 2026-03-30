@@ -81,7 +81,7 @@ warn() { echo "  ⚠️  $*"; }
 
 find_simulator_udid() {
     local name="$1"
-    xcrun simctl list devices available | grep "  $name (" | head -1 | grep -oE '[A-F0-9-]{36}'
+    xcrun simctl list devices available | grep "  $name (" | tail -1 | grep -oE '[A-F0-9-]{36}'
 }
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
