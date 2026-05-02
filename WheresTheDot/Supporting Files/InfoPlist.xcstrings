@@ -1,18 +1,49 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "CFBundleDisplayName" : {
+      "comment" : "Bundle display name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Last Dot"
+          }
+        }
+      }
+    },
+    "CFBundleName" : {
+      "comment" : "Bundle name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "WheresTheDot"
+          }
+        }
+      }
+    },
     "NSUserTrackingUsageDescription" : {
       "comment" : "Shown in the system ATT permission prompt before personalized ads are requested.",
+      "extractionState" : "extracted_with_value",
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "This identifier will be used to deliver personalized ads to you."
+          }
+        },
         "es" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Este identificador se usará para mostrarte anuncios personalizados."
           }
         },
         "es-419" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Este identificador se usará para mostrarte anuncios personalizados."
           }
         }
