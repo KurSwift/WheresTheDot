@@ -116,10 +116,14 @@ final class RemoteConfigManager {
     func milestone(for themeID: ThemeID) -> Int? {
         let key: String
         switch themeID {
-        case .neon:   return nil
-        case .forest: key = Keys.forestMilestone
-        case .ocean:  key = Keys.oceanMilestone
-        case .cosmos: key = Keys.cosmosMilestone
+        case .neon:       return nil
+        case .aurora:     return nil  // IAP-unlocked, no score milestone
+        case .inferno:    return nil  // IAP-unlocked, no score milestone
+        case .doctorping:    return nil  // IAP-unlocked, no score milestone
+        case .spacetravel:   return nil  // IAP-unlocked, no score milestone
+        case .forest:  key = Keys.forestMilestone
+        case .ocean:   key = Keys.oceanMilestone
+        case .cosmos:  key = Keys.cosmosMilestone
         }
         let value = int(key)
         return value > 0 ? value : Theme.theme(for: themeID).unlockScore

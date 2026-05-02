@@ -9,58 +9,118 @@ struct ThemeCardView: View {
     let theme: Theme
     let isActive: Bool
     let isUnlocked: Bool
+    /// For score-unlocked themes: the player's total score
     let cumulativeScore: Int
+    /// For premium themes: the formatted price string from StoreKit (nil if not loaded)
+    let priceText: String?
     let onSelect: () -> Void
+    let onBuy: (() -> Void)?
 
     var body: some View {
-        Button(action: {
-            FirebaseEventsManager.logThemeSelected(theme.id)
-            onSelect()
-        }) {
+        if theme.isPremium && !isUnlocked {
+            premiumLockedCard
+        } else {
+            Button(action: {
+                FirebaseEventsManager.logThemeSelected(theme.id)
+                onSelect()
+            }) {
+                cardContent
+            }
+            .disabled(isActive || !isUnlocked)
+            .buttonStyle(.plain)
+        }
+    }
+
+    // MARK: - Card content
+
+    private var cardContent: some View {
+        VStack(spacing: 12) {
+            dotPreview
+                .frame(height: 48)
+
+            Text(theme.name)
+                .font(.system(.subheadline, design: .rounded).weight(.bold))
+                .foregroundStyle(.white)
+
+            if isActive {
+                activeBadge
+            } else if isUnlocked {
+                Text("Tap to apply")
+                    .font(.system(size: 11, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.45))
+            } else {
+                scoreLockInfo
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.white.opacity(isActive ? 0.10 : 0.05))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(isActive ? theme.accentColor : Color.white.opacity(0.08), lineWidth: isActive ? 1.5 : 1)
+                )
+        )
+        .shadow(color: isActive ? theme.accentColor.opacity(0.25) : .clear, radius: 12)
+    }
+
+    // MARK: - Premium locked card (tappable to buy)
+
+    private var premiumLockedCard: some View {
+        Button(action: { onBuy?() }) {
             VStack(spacing: 12) {
-                dotPreview
+                dotPreview.opacity(0.4)
                     .frame(height: 48)
 
                 Text(theme.name)
                     .font(.system(.subheadline, design: .rounded).weight(.bold))
                     .foregroundStyle(.white)
 
-                if isActive {
-                    activeBadge
-                } else if isUnlocked {
-                    Text("Tap to apply")
-                        .font(.system(size: 11, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.45))
-                } else {
-                    lockInfo
-                }
+                premiumBuyBadge
             }
             .padding(16)
             .frame(maxWidth: .infinity)
             .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(Color.white.opacity(isActive ? 0.10 : 0.05))
+                    .fill(Color.white.opacity(0.05))
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
-                            .stroke(isActive ? theme.accentColor : Color.white.opacity(0.08), lineWidth: isActive ? 1.5 : 1)
+                            .stroke(theme.accentColor.opacity(0.35), lineWidth: 1)
                     )
             )
-            .shadow(color: isActive ? theme.accentColor.opacity(0.25) : .clear, radius: 12)
         }
-        .disabled(isActive || !isUnlocked)
         .buttonStyle(.plain)
     }
 
     // MARK: - Subviews
 
+    @ViewBuilder
     private var dotPreview: some View {
-        HStack(spacing: 8) {
-            ForEach(0..<3, id: \.self) { i in
-                let color = Color(theme.dotColors[i % theme.dotColors.count])
-                Circle()
-                    .fill(color.opacity(isUnlocked ? 0.9 : 0.3))
-                    .frame(width: CGFloat(14 - i * 2), height: CGFloat(14 - i * 2))
-                    .shadow(color: color.opacity(isUnlocked ? 0.6 : 0), radius: 6)
+        switch theme.dotShape {
+        case .circle:
+            HStack(spacing: 8) {
+                ForEach(0..<3, id: \.self) { i in
+                    let color = Color(theme.dotColors[i % theme.dotColors.count])
+                    Circle()
+                        .fill(color.opacity(isUnlocked ? 0.9 : 0.3))
+                        .frame(width: CGFloat(14 - i * 2), height: CGFloat(14 - i * 2))
+                        .shadow(color: color.opacity(isUnlocked ? 0.6 : 0), radius: 6)
+                }
+            }
+        case .asset(let assetName, let fallbackSymbol):
+            Group {
+                if UIImage(named: assetName) != nil {
+                    Image(assetName)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 40, height: 40)
+                        .opacity(isUnlocked ? 0.9 : 0.3)
+                } else {
+                    Image(systemName: fallbackSymbol)
+                        .font(.system(size: 32))
+                        .foregroundStyle(theme.accentColor.opacity(isUnlocked ? 0.9 : 0.3))
+                }
             }
         }
     }
@@ -75,7 +135,22 @@ struct ThemeCardView: View {
         .foregroundStyle(theme.accentColor)
     }
 
-    private var lockInfo: some View {
+    private var premiumBuyBadge: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "star.fill")
+                .font(.system(size: 10))
+            Text(priceText ?? "Premium")
+                .font(.system(size: 11, design: .rounded).weight(.bold))
+        }
+        .foregroundStyle(theme.accentColor)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 4)
+        .background(theme.accentColor.opacity(0.15))
+        .clipShape(Capsule())
+        .overlay(Capsule().stroke(theme.accentColor.opacity(0.3), lineWidth: 1))
+    }
+
+    private var scoreLockInfo: some View {
         VStack(spacing: 6) {
             let milestone = RemoteConfigManager.shared.milestone(for: theme.id) ?? 0
             let progress = min(1.0, Double(cumulativeScore) / Double(milestone))

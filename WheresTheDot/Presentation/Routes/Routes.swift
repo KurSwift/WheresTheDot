@@ -12,6 +12,7 @@ enum AppRoute: Equatable {
     case game(GameMode)
     case settings
     case themes
+    case store
     case admin
 }
 

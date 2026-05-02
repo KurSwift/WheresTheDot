@@ -92,6 +92,22 @@ enum FirebaseEventsManager {
         ])
     }
 
+    // MARK: - IAP
+
+    static func logIAPPurchased(productID: String) {
+        Analytics.logEvent("iap_purchased", parameters: [
+            "product_id": productID
+        ])
+    }
+
+    static func logIAPRestored() {
+        Analytics.logEvent("iap_restored", parameters: nil)
+    }
+
+    static func logStoreOpened() {
+        Analytics.logEvent("store_opened", parameters: nil)
+    }
+
     // MARK: - Settings Toggles
 
     static func logSoundToggled(enabled: Bool) {

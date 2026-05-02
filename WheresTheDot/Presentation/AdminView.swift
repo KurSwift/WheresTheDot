@@ -7,9 +7,11 @@
 //
 
 import SwiftUI
+internal import Combine
 
 struct AdminView: View {
     @EnvironmentObject private var appState: AppState
+    @ObservedObject private var ads = AdsManager.shared
 
     private let rc = RemoteConfigManager.shared
 
@@ -21,6 +23,9 @@ struct AdminView: View {
     // Flags
     @State private var onboardingEnabled: Bool = true
     @State private var arcadeModeEnabled: Bool = true
+
+    // IAP simulation
+    @State private var simulatePremium: Bool = false
 
     // Themes
     @State private var defaultTheme: ThemeID = .neon
@@ -40,6 +45,7 @@ struct AdminView: View {
                     gameplaySection
                     featureFlagsSection
                     themesSection
+                    iapSection
                     resetSection
                 }
                 .scrollContentBackground(.hidden)
@@ -174,6 +180,49 @@ struct AdminView: View {
         }
     }
 
+    private var iapSection: some View {
+        Section {
+            Toggle("Simulate Premium", isOn: $simulatePremium)
+                .onChange(of: simulatePremium) { _, v in
+                    AdminConfig.simulatePremium = v
+                    StoreKitManager.shared.objectWillChange.send()
+                }
+
+            HStack {
+                Label("Ad loaded", systemImage: "checkmark.circle.fill")
+                    .foregroundStyle(ads.isAdLoaded ? Color.neonLime : Color.dottoDanger)
+                Spacer()
+                Text(ads.isAdLoaded ? "Ready" : "Not ready")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            if let error = ads.lastAdError {
+                Text("⚠ \(error)")
+                    .font(.caption)
+                    .foregroundStyle(Color.dottoDanger)
+            }
+
+            Button {
+                AdsManager.shared.resetCounter()
+            } label: {
+                Label("Reset ad counter  (count: \(ads.gameOverCount)/3)", systemImage: "arrow.counterclockwise")
+            }
+
+            Button {
+                AdsManager.shared.forceShowAd()
+            } label: {
+                Label("Force show interstitial now", systemImage: "play.rectangle.fill")
+            }
+            .disabled(!ads.isAdLoaded)
+        } header: {
+            Text("IAP / Ads")
+        } footer: {
+            Text("Simulate Premium overrides real StoreKit entitlements for UI testing only.")
+                .font(.caption)
+        }
+    }
+
     private var resetSection: some View {
         Section {
             Button(role: .destructive) {
@@ -208,5 +257,6 @@ struct AdminView: View {
         forestMilestone      = rc.milestone(for: .forest) ?? 50
         oceanMilestone       = rc.milestone(for: .ocean) ?? 150
         cosmosMilestone      = rc.milestone(for: .cosmos) ?? 350
+        simulatePremium      = AdminConfig.simulatePremium
     }
 }

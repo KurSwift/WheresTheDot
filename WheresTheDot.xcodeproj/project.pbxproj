@@ -21,6 +21,7 @@
 		6E77980E2F724CB500F7E2F1 /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = 6E77980D2F724CB500F7E2F1 /* FirebaseRemoteConfig */; };
 		6E7798102F724CB500F7E2F1 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 6E77980F2F724CB500F7E2F1 /* FirebaseStorage */; };
 		6E7798122F724CB500F7E2F1 /* FirebaseStorageCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = 6E7798112F724CB500F7E2F1 /* FirebaseStorageCombine-Community */; };
+		6EBFE1072FA55AE200EF8150 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 6EBFE1062FA55AE200EF8150 /* GoogleMobileAds */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -47,6 +48,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		6EBFE1092FA5696900EF8150 /* Exceptions for "WheresTheDot" folder in "WheresTheDot" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 6E3138572F392F5700FFF3C2 /* WheresTheDot */;
+		};
 		6EC26D822F785EB2004DA024 /* Exceptions for "WheresTheDot" folder in "WheresTheDotUITests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -60,6 +68,7 @@
 		6E31385A2F392F5800FFF3C2 /* WheresTheDot */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
+				6EBFE1092FA5696900EF8150 /* Exceptions for "WheresTheDot" folder in "WheresTheDot" target */,
 				6EC26D822F785EB2004DA024 /* Exceptions for "WheresTheDot" folder in "WheresTheDotUITests" target */,
 			);
 			path = WheresTheDot;
@@ -94,6 +103,7 @@
 				6E7798102F724CB500F7E2F1 /* FirebaseStorage in Frameworks */,
 				6E7798042F724CB500F7E2F1 /* FirebaseDatabase in Frameworks */,
 				6E7797FE2F724CB500F7E2F1 /* FirebaseAnalyticsCore in Frameworks */,
+				6EBFE1072FA55AE200EF8150 /* GoogleMobileAds in Frameworks */,
 				6E77980C2F724CB500F7E2F1 /* FirebaseMessaging in Frameworks */,
 				6E77980A2F724CB500F7E2F1 /* FirebaseInAppMessaging-Beta in Frameworks */,
 			);
@@ -170,6 +180,7 @@
 				6E77980D2F724CB500F7E2F1 /* FirebaseRemoteConfig */,
 				6E77980F2F724CB500F7E2F1 /* FirebaseStorage */,
 				6E7798112F724CB500F7E2F1 /* FirebaseStorageCombine-Community */,
+				6EBFE1062FA55AE200EF8150 /* GoogleMobileAds */,
 			);
 			productName = WheresTheDot;
 			productReference = 6E3138582F392F5800FFF3C2 /* WheresTheDot.app */;
@@ -257,6 +268,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				6E7797F62F724CB500F7E2F1 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				6EBFE1052FA55AE200EF8150 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 6E3138592F392F5800FFF3C2 /* Products */;
@@ -460,10 +472,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = WheresTheDot/WheresTheDotRelease.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 49VFMFM852;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WheresTheDot/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Last Dot";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.arcade-games";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -475,7 +489,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.optionalsankur.Dotto;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -496,10 +510,11 @@
 				CODE_SIGN_ENTITLEMENTS = WheresTheDot/WheresTheDotRelease.entitlements;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = 49VFMFM852;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WheresTheDot/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Last Dot";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.arcade-games";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -511,7 +526,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.optionalsankur.Dotto;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -660,6 +675,14 @@
 				minimumVersion = 12.11.0;
 			};
 		};
+		6EBFE1052FA55AE200EF8150 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 13.3.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -732,6 +755,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 6E7797F62F724CB500F7E2F1 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = "FirebaseStorageCombine-Community";
+		};
+		6EBFE1062FA55AE200EF8150 /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6EBFE1052FA55AE200EF8150 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

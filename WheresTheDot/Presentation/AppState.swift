@@ -2,8 +2,6 @@
 //  AppState.swift
 //  WheresTheDot
 //
-//  Created by Ernesto Sánchez Kuri on 08/02/26.
-//
 
 import Foundation
 import SwiftUI
@@ -19,6 +17,7 @@ final class AppState: ObservableObject {
     // MARK: - Theme
 
     let themeRepo: ThemeRepository = UserDefaultsThemeRepository()
+    let store = StoreKitManager.shared
 
     @AppStorage("activeThemeID") private var activeThemeIDRaw: String = ThemeID.neon.rawValue
 
@@ -28,11 +27,20 @@ final class AppState: ObservableObject {
 
     lazy var checkThemeUnlocks = CheckThemeUnlocksUseCase(repo: themeRepo)
 
+    func isUnlocked(theme: Theme) -> Bool {
+        if theme.isAlwaysUnlocked { return true }
+        if theme.isPremium { return store.isPurchased(theme.productID ?? "") }
+        return themeRepo.unlockedThemeIDs.contains(theme.id)
+    }
+
     func setActiveTheme(_ id: ThemeID) {
-        guard themeRepo.unlockedThemeIDs.contains(id) else { return }
+        let theme = Theme.theme(for: id)
+        guard isUnlocked(theme: theme) else { return }
         themeRepo.setActiveTheme(id)
         activeThemeIDRaw = id.rawValue
     }
+
+    var isAdFree: Bool { store.isAdFree }
 
     // MARK: - Navigation
 
@@ -54,6 +62,11 @@ final class AppState: ObservableObject {
 
     func openThemes() {
         route = .themes
+    }
+
+    func openStore() {
+        FirebaseEventsManager.logStoreOpened()
+        route = .store
     }
 
     func openAdmin() {

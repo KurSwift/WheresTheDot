@@ -10,6 +10,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject private var appState: AppState
+    @ObservedObject private var store = StoreKitManager.shared
 
     var body: some View {
         NavigationStack {
@@ -51,6 +52,34 @@ struct SettingsView: View {
                 .onChange(of: appState.colorBlindMode) { _, newValue in
                     FirebaseEventsManager.logColorBlindModeToggled(enabled: newValue)
                 }
+
+            // MARK: Premium section
+
+            VStack(spacing: 12) {
+                Button {
+                    appState.openStore()
+                } label: {
+                    Label(appState.isAdFree ? "Premium (Active)" : "Get Premium", systemImage: "star.fill")
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
+                .buttonStyle(DottoButtonStyle(kind: .options))
+                .disabled(appState.isAdFree)
+
+                Button {
+                    Task { await store.restorePurchases() }
+                } label: {
+                    HStack {
+                        if store.isLoading {
+                            ProgressView().tint(.white).scaleEffect(0.8)
+                        }
+                        Text("Restore Purchases")
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    }
+                }
+                .buttonStyle(DottoButtonStyle(kind: .options))
+                .disabled(store.isLoading)
+            }
+
             Spacer()
             Button {
                 appState.goHome()

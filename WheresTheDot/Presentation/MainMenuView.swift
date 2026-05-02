@@ -11,6 +11,7 @@ import GameKit
 struct MainMenuView: View {
     @EnvironmentObject private var appState: AppState
     @ObservedObject private var gameCenter = GameCenterManager.shared
+    @ObservedObject private var store = StoreKitManager.shared
 
     var body: some View {
         ZStack {
@@ -142,11 +143,21 @@ struct MainMenuView: View {
 
             Spacer()
 
-            if AdminConfig.isEnabled {
-                // Balance the layout
+            if !store.isAdFree {
+                Button {
+                    appState.openStore()
+                } label: {
+                    Image(systemName: "star.fill")
+                        .font(.footnote)
+                        .foregroundStyle(Color.neonYellow)
+                }
+                .buttonStyle(.plain)
+            } else if AdminConfig.isEnabled {
                 Image(systemName: "wrench.and.screwdriver.fill")
                     .font(.footnote)
                     .hidden()
+            } else {
+                Color.clear.frame(width: 20, height: 20)
             }
         }
         .padding(.horizontal, 24)
