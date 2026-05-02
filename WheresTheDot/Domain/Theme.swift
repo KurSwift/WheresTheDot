@@ -13,6 +13,18 @@ enum ThemeID: String, CaseIterable, Codable {
     case forest
     case ocean
     case cosmos
+    case aurora
+    case inferno
+    case doctorping
+    case spacetravel
+}
+
+// MARK: - DotShape
+
+enum DotShape: Equatable {
+    case circle
+    /// PNG asset from xcassets. Falls back to the SF Symbol if the asset isn't found at runtime.
+    case asset(named: String, fallbackSymbol: String)
 }
 
 // MARK: - Theme
@@ -20,18 +32,19 @@ enum ThemeID: String, CaseIterable, Codable {
 struct Theme {
     let id: ThemeID
     let name: LocalizedStringResource
-    /// nil = always unlocked
+    /// nil = always unlocked (for score-unlocked themes this holds the milestone)
     let unlockScore: Int?
-    /// Dark base color for the scene/screen background
+    /// true = requires IAP, not earned by score
+    let isPremium: Bool
+    /// StoreKit product ID for premium themes; nil for score-unlocked themes
+    let productID: String?
     let backgroundColor: Color
-    /// Grid line color (SwiftUI + SpriteKit)
     let gridColor: Color
-    /// Cycling palette used by GameScene for dot colors
     let dotColors: [UIColor]
-    /// Accent color used in UI elements (progress bars, active badges)
     let accentColor: Color
+    let dotShape: DotShape
 
-    var isAlwaysUnlocked: Bool { unlockScore == nil }
+    var isAlwaysUnlocked: Bool { unlockScore == nil && !isPremium }
 }
 
 // MARK: - Theme catalog
@@ -41,16 +54,21 @@ extension Theme {
         id: .neon,
         name: "Neon" as LocalizedStringResource,
         unlockScore: nil,
+        isPremium: false,
+        productID: nil,
         backgroundColor: Color(UIColor(hex: "#05060A")),
         gridColor: .neonCyan,
         dotColors: [.neonCyan, .neonPink, .neonPurple, .neonLime, .neonOrange],
-        accentColor: .neonCyan
+        accentColor: .neonCyan,
+        dotShape: .circle
     )
 
     static let forest = Theme(
         id: .forest,
         name: "Forest" as LocalizedStringResource,
         unlockScore: 50,
+        isPremium: false,
+        productID: nil,
         backgroundColor: Color(UIColor(hex: "#050D07")),
         gridColor: Color(UIColor(hex: "#4ADE80")),
         dotColors: [
@@ -60,13 +78,16 @@ extension Theme {
             UIColor(hex: "#A3E635"),
             UIColor(hex: "#FBBF24")
         ],
-        accentColor: Color(UIColor(hex: "#4ADE80"))
+        accentColor: Color(UIColor(hex: "#4ADE80")),
+        dotShape: .circle
     )
 
     static let ocean = Theme(
         id: .ocean,
         name: "Ocean" as LocalizedStringResource,
-        unlockScore: 150,
+        unlockScore: nil,
+        isPremium: true,
+        productID: nil,
         backgroundColor: Color(UIColor(hex: "#03080F")),
         gridColor: Color(UIColor(hex: "#22D3EE")),
         dotColors: [
@@ -76,13 +97,16 @@ extension Theme {
             UIColor(hex: "#F87171"),
             UIColor(hex: "#93C5FD")
         ],
-        accentColor: Color(UIColor(hex: "#22D3EE"))
+        accentColor: Color(UIColor(hex: "#22D3EE")),
+        dotShape: .circle
     )
 
     static let cosmos = Theme(
         id: .cosmos,
         name: "Cosmos" as LocalizedStringResource,
-        unlockScore: 350,
+        unlockScore: nil,
+        isPremium: true,
+        productID: nil,
         backgroundColor: Color(UIColor(hex: "#080510")),
         gridColor: Color(UIColor(hex: "#A855F7")),
         dotColors: [
@@ -92,10 +116,87 @@ extension Theme {
             UIColor(hex: "#F0ABFC"),
             UIColor(hex: "#FDE68A")
         ],
-        accentColor: Color(UIColor(hex: "#A855F7"))
+        accentColor: Color(UIColor(hex: "#A855F7")),
+        dotShape: .circle
     )
 
-    static let all: [Theme] = [.neon, .forest, .ocean, .cosmos]
+    static let aurora = Theme(
+        id: .aurora,
+        name: "Aurora" as LocalizedStringResource,
+        unlockScore: nil,
+        isPremium: true,
+        productID: "com.optionalsankur.Dotto.theme.aurora",
+        backgroundColor: Color(UIColor(hex: "#030A15")),
+        gridColor: Color(UIColor(hex: "#BAE6FD")),
+        dotColors: [
+            UIColor(hex: "#7DD3FC"),
+            UIColor(hex: "#E0F2FE"),
+            UIColor(hex: "#38BDF8"),
+            UIColor(hex: "#818CF8"),
+            UIColor(hex: "#BAE6FD")
+        ],
+        accentColor: Color(UIColor(hex: "#7DD3FC")),
+        dotShape: .asset(named: "snowflake", fallbackSymbol: "snowflake")
+    )
+
+    static let inferno = Theme(
+        id: .inferno,
+        name: "Inferno" as LocalizedStringResource,
+        unlockScore: nil,
+        isPremium: true,
+        productID: "com.optionalsankur.Dotto.theme.inferno",
+        backgroundColor: Color(UIColor(hex: "#100305")),
+        gridColor: Color(UIColor(hex: "#F97316")),
+        dotColors: [
+            UIColor(hex: "#EF4444"),
+            UIColor(hex: "#F97316"),
+            UIColor(hex: "#F59E0B"),
+            UIColor(hex: "#FCD34D"),
+            UIColor(hex: "#FB7185")
+        ],
+        accentColor: Color(UIColor(hex: "#F97316")),
+        dotShape: .asset(named: "flame.fill", fallbackSymbol: "flame.fill")
+    )
+
+    static let doctorping = Theme(
+        id: .doctorping,
+        name: "DoctorPing" as LocalizedStringResource,
+        unlockScore: nil,
+        isPremium: true,
+        productID: "com.optionalsankur.Dotto.premium",
+        backgroundColor: Color(UIColor(hex: "#040A10")),
+        gridColor: Color(UIColor(hex: "#64B5D9")),
+        dotColors: [
+            UIColor(hex: "#64B5D9"), // medical blue
+            UIColor(hex: "#81C784"), // hospital mint
+            UIColor(hex: "#EF9A9A"), // soft rose/red
+            UIColor(hex: "#90CAF9"), // light blue
+            UIColor(hex: "#A5D6A7")  // mint green
+        ],
+        accentColor: Color(UIColor(hex: "#64B5D9")),
+        dotShape: .asset(named: "DoctorPing", fallbackSymbol: "stethoscope")
+    )
+
+    static let spacetravel = Theme(
+        id: .spacetravel,
+        name: "Space Travel" as LocalizedStringResource,
+        unlockScore: nil,
+        isPremium: true,
+        productID: "com.optionalsankur.Dotto.premium",
+        backgroundColor: Color(UIColor(hex: "#0b1e29")),
+        gridColor: Color(UIColor(hex: "#143d4a")),
+        dotColors: [
+            UIColor(hex: "#f2bd55"),
+            UIColor(hex: "#c9dbe5"),
+            UIColor(hex: "#848fca"),
+            UIColor(hex: "#b0d8e8"),
+            UIColor(hex: "#e8a0aa")
+        ],
+        accentColor: Color(UIColor(hex: "#e07a8a")),
+        dotShape: .asset(named: "star.fill", fallbackSymbol: "star.fill")
+    )
+
+    static let all: [Theme] = [.neon, .forest, .ocean, .cosmos, .aurora, .inferno, .doctorping, .spacetravel]
 
     static func theme(for id: ThemeID) -> Theme {
         all.first { $0.id == id } ?? .neon

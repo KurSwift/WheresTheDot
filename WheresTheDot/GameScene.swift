@@ -20,6 +20,8 @@ final class GameScene: SKScene {
     
     var level: GameLevel = .beginner
     var colorBlindMode: Bool = false
+    /// Shape used to render each dot. Defaults to circle.
+    var themeDotShape: DotShape = .circle
     /// Theme dot palette — set before each game. Falls back to neon if not set.
     var themeColors: [UIColor] = [.neonCyan, .neonPink, .neonPurple, .neonLime, .neonOrange]
     /// Theme grid color — triggers a grid rebuild when set.
@@ -208,43 +210,77 @@ final class GameScene: SKScene {
     }
 
     private func spawnDot(_ dot: Dot, color: UIColor, alpha: CGFloat, delay: TimeInterval) {
-        let halo = SKShapeNode(circleOfRadius: dot.radius * 1.8)
-        halo.name = "halo"
-        halo.position = dot.position
-        halo.fillColor = color.withAlphaComponent(alpha)
-        halo.strokeColor = .clear
-        halo.blendMode = .add
-        halo.zPosition = 0
-        halo.setScale(0.0)
-        addChild(halo)
-        
-        let node = SKShapeNode(circleOfRadius: dot.radius)
-        node.name = "dot"
-        node.position = dot.position
-        node.fillColor = color
-        node.strokeColor = .clear
-        node.blendMode = .add
-        node.zPosition = 1
-        node.userData = ["id": dot.id.uuidString, "radius": dot.radius]
-        node.setScale(0.0)
-        addChild(node)
-
         let pop = SKAction.scale(to: 1.0, duration: 0.14)
         pop.timingMode = .easeOut
         let wait = SKAction.wait(forDuration: delay)
-        node.run(.sequence([wait, pop]))
-        halo.run(.sequence([wait, pop]))
+
+        switch themeDotShape {
+        case .circle:
+            let halo = SKShapeNode(circleOfRadius: dot.radius * 1.8)
+            halo.name = "halo"
+            halo.position = dot.position
+            halo.fillColor = color.withAlphaComponent(alpha)
+            halo.strokeColor = .clear
+            halo.blendMode = .add
+            halo.zPosition = 0
+            halo.setScale(0.0)
+            addChild(halo)
+            halo.run(.sequence([wait, pop]))
+
+            let shape = SKShapeNode(circleOfRadius: dot.radius)
+            shape.name = "dot"
+            shape.position = dot.position
+            shape.fillColor = color
+            shape.strokeColor = .clear
+            shape.blendMode = .add
+            shape.zPosition = 1
+            shape.userData = ["id": dot.id.uuidString, "radius": dot.radius]
+            shape.setScale(0.0)
+            addChild(shape)
+            shape.run(.sequence([wait, pop]))
+
+        case .asset(let assetName, let fallbackSymbol):
+            let side = dot.radius * 2
+            let sprite = makeDotSprite(
+                assetName: assetName,
+                fallbackSymbol: fallbackSymbol,
+                color: color,
+                side: side
+            )
+            sprite.name = "dot"
+            sprite.position = dot.position
+            sprite.zPosition = 1
+            sprite.userData = ["id": dot.id.uuidString, "radius": dot.radius]
+            sprite.setScale(0.0)
+            addChild(sprite)
+            sprite.run(.sequence([wait, pop]))
+        }
     }
 
-    private func emphasizeNewDot(_ id: UUID) {
-        guard let node = dotNode(id: id) else { return }
-        let alpha = CGFloat.random(in: 0.75...0.95)
-        node.fillColor = node.fillColor.withAlphaComponent(alpha)
+    private func makeDotSprite(assetName: String, fallbackSymbol: String, color: UIColor, side: CGFloat) -> SKSpriteNode {
+        let spriteSize = CGSize(width: side, height: side)
+        if UIImage(named: assetName) != nil {
+            return SKSpriteNode(texture: SKTexture(imageNamed: assetName), size: spriteSize)
+        }
+        // SF Symbol fallback — rasterize into a bitmap so SKTexture picks up the color.
+        // SKTexture(image:) reads raw pixels and ignores UIImage tint metadata, so we
+        // must bake the color in via UIGraphicsImageRenderer before converting.
+        let config = UIImage.SymbolConfiguration(pointSize: side * 0.7, weight: .bold)
+        if let symbol = UIImage(systemName: fallbackSymbol, withConfiguration: config) {
+            let tinted = symbol.withTintColor(color, renderingMode: .alwaysOriginal)
+            let renderer = UIGraphicsImageRenderer(size: spriteSize)
+            let rasterized = renderer.image { _ in
+                tinted.draw(in: CGRect(origin: .zero, size: spriteSize))
+            }
+            return SKSpriteNode(texture: SKTexture(image: rasterized), size: spriteSize)
+        }
+        return SKSpriteNode(color: color, size: spriteSize)
     }
 
-    func dotNode(id: UUID) -> SKShapeNode? {
-        children.compactMap { $0 as? SKShapeNode }
-            .first(where: { $0.name == "dot" && ($0.userData?["id"] as? String) == id.uuidString })
+    func dotNode(id: UUID) -> SKNode? {
+        children
+            .filter { $0.name == "dot" }
+            .first(where: { ($0.userData?["id"] as? String) == id.uuidString })
     }
 
     func showOutcome(_ outcome: RoundOutcome) {
@@ -257,8 +293,7 @@ final class GameScene: SKScene {
         case .noSelection(let id): correctID = id
         }
 
-        let nodes = children.compactMap { $0 as? SKShapeNode }
-        if let node = nodes.first(where: { ($0.userData?["id"] as? String) == correctID.uuidString }) {
+        if let node = dotNode(id: correctID) {
             let pulseUp = SKAction.scale(to: 1.4, duration: 0.12)
             let pulseDown = SKAction.scale(to: 1.0, duration: 0.12)
             node.run(.sequence([pulseUp, pulseDown]))
@@ -344,11 +379,11 @@ final class GameScene: SKScene {
         // Use distance-based hit detection with a tap padding buffer.
         // This keeps the visual size unchanged while making small dots easier to tap.
         let tapPadding: CGFloat = 8
-        let dotNodes = children.compactMap { $0 as? SKShapeNode }.filter { $0.name == "dot" }
+        let dotNodes = children.filter { $0.name == "dot" }
 
         // Pick the closest dot within tap range (avoids ambiguity when dots are near each other)
         let hit = dotNodes
-            .compactMap { node -> (SKShapeNode, CGFloat)? in
+            .compactMap { node -> (SKNode, CGFloat)? in
                 guard let radius = node.userData?["radius"] as? CGFloat else { return nil }
                 let dx = p.x - node.position.x
                 let dy = p.y - node.position.y
@@ -358,8 +393,8 @@ final class GameScene: SKScene {
             .min(by: { $0.1 < $1.1 })?
             .0
 
-        if let shape = hit,
-           let idString = shape.userData?["id"] as? String,
+        if let node = hit,
+           let idString = node.userData?["id"] as? String,
            let id = UUID(uuidString: idString) {
             onDotTapped?(id)
         }
@@ -395,9 +430,7 @@ final class GameScene: SKScene {
     
     /// Optional: pulse a specific dot (newest dot) to guide player slightly
     func pulseDot(id: UUID) {
-        let nodes = children.compactMap { $0 as? SKShapeNode }
-        guard let node = nodes.first(where: { ($0.userData?["id"] as? String) == id.uuidString }) else { return }
-        
+        guard let node = dotNode(id: id) else { return }
         let up = SKAction.scale(to: 1.35, duration: 0.10)
         let down = SKAction.scale(to: 1.0, duration: 0.10)
         node.run(.sequence([up, down]))

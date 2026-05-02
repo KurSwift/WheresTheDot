@@ -23,6 +23,8 @@ struct RootView: View {
                 SettingsView()
             case .themes:
                 ThemesView()
+            case .store:
+                PurchaseView()
             case .admin:
                 AdminView()
             }

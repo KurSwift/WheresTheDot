@@ -140,6 +140,7 @@ struct GameContainerView: View {
         .onChange(of: coordinator.message) { _, newValue in
             if newValue == "Time's up!" {
                 FirebaseEventsManager.logGameOver(reason: .timeUp, score: coordinator.score, mode: mode)
+                AdsManager.shared.recordGameOver()
                 gameOverVisible = true
             } else if newValue == "Game Over" {
                 Task { @MainActor in
@@ -533,6 +534,7 @@ private extension GameContainerView {
         let scene = GameScene(size: .zero)
         scene.scaleMode = .resizeFill
         scene.colorBlindMode = appState.colorBlindMode
+        scene.themeDotShape = appState.currentTheme.dotShape
         scene.themeColors = appState.currentTheme.dotColors
         scene.themeGridColor = UIColor(appState.currentTheme.gridColor)
         scene.themeBackgroundColor = UIColor(appState.currentTheme.backgroundColor)
@@ -664,6 +666,7 @@ private extension GameContainerView {
                 scene.setInputEnabled(false)
                 timerBarStart = nil
                 FirebaseEventsManager.logGameOver(reason: .wrongTap, score: coordinator.score, mode: mode)
+                AdsManager.shared.recordGameOver()
 
                 let unlocked = appState.checkThemeUnlocks(score: coordinator.score)
                 if !unlocked.isEmpty {

@@ -1,0 +1,23 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "NSUserTrackingUsageDescription" : {
+      "comment" : "Shown in the system ATT permission prompt before personalized ads are requested.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este identificador se usará para mostrarte anuncios personalizados."
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este identificador se usará para mostrarte anuncios personalizados."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}
