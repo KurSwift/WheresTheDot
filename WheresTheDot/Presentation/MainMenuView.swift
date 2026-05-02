@@ -39,24 +39,25 @@ struct MainMenuView: View {
     }
 
     private var menuButtons: some View {
-        VStack(alignment: .leading) {
+        VStack(spacing: 0) {
+            Spacer()
             Button {
                 FirebaseEventsManager.logGameModeSelected(.classic)
                 appState.startGame(mode: .classic)
             } label: {
                 HStack(spacing: 0) {
                     Text("Classic Mode")
-                                        .bold()
-                                        .padding()
+                        .bold()
+                        .padding()
                     Image(systemName: "infinity")
                         .bold()
                         .padding()
                 }
-
             }
             .accessibilityIdentifier("btn_classic_mode")
             .buttonStyle(DottoButtonStyle(kind: .classic))
-            .padding(10)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
 
             if RemoteConfigManager.shared.arcadeModeEnabled {
                 Button {
@@ -69,57 +70,69 @@ struct MainMenuView: View {
                 }
                 .accessibilityIdentifier("btn_arcade_mode")
                 .buttonStyle(DottoButtonStyle(kind: .arcade))
-                .padding(10)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
             }
-
-            Button {
-                FirebaseEventsManager.logThemesOpened()
-                appState.openThemes()
-            } label: {
-                HStack(spacing: 0) {
-                    Text("Themes")
-                        .bold()
-                        .padding()
-                    Image(systemName: "paintpalette.fill")
-                        .bold()
-                        .padding()
-                }
-            }
-            .accessibilityIdentifier("btn_themes")
-            .buttonStyle(DottoButtonStyle(kind: .options))
-            .padding(10)
-
-            Button {
-                FirebaseEventsManager.logSettingsOpened()
-                appState.openSettings()
-            } label: {
-                Text("Options")
-                    .bold()
-                    .padding()
-            }
-            .accessibilityIdentifier("btn_options")
-            .buttonStyle(DottoButtonStyle(kind: .options))
-            .padding(10)
-
-            if gameCenter.isAuthenticated {
-                Button {
-                    FirebaseEventsManager.logLeaderboardOpened()
-                    GameCenterManager.shared.presentLeaderboards()
-                } label: {
-                    HStack(spacing: 0) {
-                        Text("Leaderboards")
-                            .bold()
-                            .padding()
-                        Image(systemName: "trophy.fill")
-                            .bold()
-                            .padding()
-                    }
-                }
-                .buttonStyle(DottoButtonStyle(kind: .classic))
-                .padding(10)
-            }
+            Spacer()
+            utilityRow
+                .padding(.horizontal, 10)
+                .padding(.top, 16)
         }
         .padding(.top, 8)
+    }
+
+    private var utilityRow: some View {
+        HStack(spacing: 12) {
+            utilityButton(icon: "paintpalette.fill", label: "Themes", color: .neonPurple) {
+                FirebaseEventsManager.logThemesOpened()
+                appState.openThemes()
+            }
+            .accessibilityIdentifier("btn_themes")
+
+            utilityButton(icon: "gearshape.fill", label: "Options", color: .neonPurple) {
+                FirebaseEventsManager.logSettingsOpened()
+                appState.openSettings()
+            }
+            .accessibilityIdentifier("btn_options")
+
+            if gameCenter.isAuthenticated {
+                utilityButton(icon: "trophy.fill", label: "Leaderboards", color: .neonCyan) {
+                    FirebaseEventsManager.logLeaderboardOpened()
+                    GameCenterManager.shared.presentLeaderboards()
+                }
+            }
+        }
+    }
+
+    private func utilityButton(
+        icon: String,
+        label: LocalizedStringKey,
+        color: Color,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            VStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(color)
+                Text(label)
+                    .font(.system(.caption2, design: .rounded).weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.75))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background {
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(color.opacity(0.12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .strokeBorder(color.opacity(0.3), lineWidth: 1)
+                    )
+            }
+        }
+        .buttonStyle(.plain)
     }
 
     private var footer: some View {
@@ -162,8 +175,6 @@ struct MainMenuView: View {
         }
         .padding(.horizontal, 24)
     }
-
-
 }
 
 #Preview {

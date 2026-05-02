@@ -30,11 +30,10 @@ final class GameCenterManager: ObservableObject {
                     UIApplication.shared.topViewController?.present(vc, animated: true)
                 } else if GKLocalPlayer.local.isAuthenticated {
                     self?.isAuthenticated = true
-                    GKAccessPoint.shared.isActive = true
                 } else {
                     self?.isAuthenticated = false
-                    GKAccessPoint.shared.isActive = false
                 }
+                GKAccessPoint.shared.isActive = false
             }
         }
     }

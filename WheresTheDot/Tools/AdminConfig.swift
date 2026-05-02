@@ -9,7 +9,7 @@
 import Foundation
 
 enum AdminConfig {
-    static let isEnabled: Bool = false
+    static let isEnabled: Bool = true
 
     // MARK: - IAP simulation (only active when isEnabled == true)
 
