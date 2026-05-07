@@ -20,6 +20,23 @@ final class GameCenterManager: ObservableObject {
         static let arcade  = "lastdot_arcade"
     }
 
+    enum Achievement: String {
+        case firstDot        = "lastdot.first_dot"
+        case score10Classic  = "lastdot.score10_classic"
+        case score25Classic  = "lastdot.score25_classic"
+        case score50Classic  = "lastdot.score50_classic"
+        case score100Classic = "lastdot.score100_classic"
+        case score10Arcade   = "lastdot.score10_arcade"
+        case score25Arcade   = "lastdot.score25_arcade"
+        case score50Arcade   = "lastdot.score50_arcade"
+        case unlockForest    = "lastdot.unlock_forest"
+        case unlockOcean     = "lastdot.unlock_ocean"
+        case unlockCosmos    = "lastdot.unlock_cosmos"
+        case play10Games     = "lastdot.play_10_games"
+    }
+
+    private let gamesPlayedKey = "gamesPlayedForAchievement"
+
     private init() {}
 
     func authenticateLocalPlayer() {
@@ -52,9 +69,49 @@ final class GameCenterManager: ObservableObject {
         GKAccessPoint.shared.trigger(state: .leaderboards) {}
     }
 
+    func presentAchievements() {
+        GKAccessPoint.shared.trigger(state: .achievements) {}
+    }
+
     func presentLeaderboard(for mode: GameMode) {
         guard let leaderboardID = leaderboardID(for: mode) else { return }
         GKAccessPoint.shared.trigger(leaderboardID: leaderboardID, playerScope: .global, timeScope: .allTime) {}
+    }
+
+    func reportAchievement(_ achievement: Achievement, percentComplete: Double = 100.0) {
+        guard isAuthenticated else { return }
+        let gkAchievement = GKAchievement(identifier: achievement.rawValue)
+        gkAchievement.percentComplete = percentComplete
+        gkAchievement.showsCompletionBanner = true
+        GKAchievement.report([gkAchievement]) { error in
+            if let error {
+                print("[GameCenter] Achievement report failed (\(achievement.rawValue)): \(error.localizedDescription)")
+            }
+        }
+    }
+
+    func reportScoreAchievements(score: Int, mode: GameMode) {
+        if score >= 1 { reportAchievement(.firstDot) }
+        switch mode {
+        case .classic:
+            if score >= 10  { reportAchievement(.score10Classic) }
+            if score >= 25  { reportAchievement(.score25Classic) }
+            if score >= 50  { reportAchievement(.score50Classic) }
+            if score >= 100 { reportAchievement(.score100Classic) }
+        case .arcade:
+            if score >= 10 { reportAchievement(.score10Arcade) }
+            if score >= 25 { reportAchievement(.score25Arcade) }
+            if score >= 50 { reportAchievement(.score50Arcade) }
+        case .daily:
+            break
+        }
+    }
+
+    func trackGamePlayed() {
+        let count = UserDefaults.standard.integer(forKey: gamesPlayedKey) + 1
+        UserDefaults.standard.set(count, forKey: gamesPlayedKey)
+        let percent = min(Double(count) / 10.0 * 100.0, 100.0)
+        reportAchievement(.play10Games, percentComplete: percent)
     }
 
     private func leaderboardID(for mode: GameMode) -> String? {

@@ -9,8 +9,12 @@
 import Foundation
 
 enum AdminConfig {
-    static let isEnabled: Bool = true
-
+    
+    #if DEBUG
+        static let isEnabled: Bool = true
+    #else
+        static let isEnabled: Bool = false
+    #endif
     // MARK: - IAP simulation (only active when isEnabled == true)
 
     private static let simulatePremiumKey = "admin.simulatePremium"

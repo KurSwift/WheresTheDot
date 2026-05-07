@@ -671,6 +671,14 @@ private extension GameContainerView {
                 let unlocked = appState.checkThemeUnlocks(score: coordinator.score)
                 if !unlocked.isEmpty {
                     unlocked.forEach { FirebaseEventsManager.logThemeUnlocked($0.id) }
+                    unlocked.forEach { theme in
+                        switch theme.id {
+                        case .forest: GameCenterManager.shared.reportAchievement(.unlockForest)
+                        case .ocean:  GameCenterManager.shared.reportAchievement(.unlockOcean)
+                        case .cosmos: GameCenterManager.shared.reportAchievement(.unlockCosmos)
+                        default: break
+                        }
+                    }
                     newlyUnlockedThemes = unlocked
                     unlockBannerVisible = true
                     Task { @MainActor in
