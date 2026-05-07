@@ -100,6 +100,9 @@ struct MainMenuView: View {
                     FirebaseEventsManager.logLeaderboardOpened()
                     GameCenterManager.shared.presentLeaderboards()
                 }
+                utilityButton(icon: "rosette", label: "Achievements", color: .neonCyan) {
+                    GameCenterManager.shared.presentAchievements()
+                }
             }
         }
     }
