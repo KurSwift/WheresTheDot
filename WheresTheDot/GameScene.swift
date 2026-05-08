@@ -21,7 +21,20 @@ final class GameScene: SKScene {
     var level: GameLevel = .beginner
     var colorBlindMode: Bool = false
     /// Shape used to render each dot. Defaults to circle.
-    var themeDotShape: DotShape = .circle
+    /// Setting `.randomAssets` picks one asset index randomly and resolves it to `.asset` immediately,
+    /// so the same shape is used for all dots within a single game session.
+    var themeDotShape: DotShape {
+        get { _themeDotShape }
+        set {
+            if case .randomAssets(let prefix, let count, let fallback) = newValue {
+                let index = Int.random(in: 1...count)
+                _themeDotShape = .asset(named: "\(prefix)_\(index)", fallbackSymbol: fallback)
+            } else {
+                _themeDotShape = newValue
+            }
+        }
+    }
+    private var _themeDotShape: DotShape = .circle
     /// Theme dot palette — set before each game. Falls back to neon if not set.
     var themeColors: [UIColor] = [.neonCyan, .neonPink, .neonPurple, .neonLime, .neonOrange]
     /// Theme grid color — triggers a grid rebuild when set.
@@ -254,6 +267,10 @@ final class GameScene: SKScene {
             sprite.setScale(0.0)
             addChild(sprite)
             sprite.run(.sequence([wait, pop]))
+
+        case .randomAssets:
+            // Unreachable — the themeDotShape setter resolves this to .asset before any dot is spawned.
+            break
         }
     }
 
