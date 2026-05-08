@@ -26,7 +26,7 @@ WheresTheDot/
 ├── Data/            # Concrete implementations (repositories, adapters)
 ├── Use Cases/       # Orchestrators between domain and presentation
 ├── Presentation/    # SwiftUI views, coordinators, state
-├── Tools/           # Cross-cutting concerns (analytics, config, audio, haptics)
+├── Tools/           # Cross-cutting concerns (analytics, config, audio, haptics, ads, IAP)
 ├── Utils/           # Extensions
 └── GameScene.swift  # SpriteKit scene — pure rendering + touch input
 ```
@@ -34,10 +34,10 @@ WheresTheDot/
 | Layer | Key types |
 |---|---|
 | Domain | `Dot`, `Round`, `GameSnapshot`, `Difficulty`, `Theme`, `ThemeID` |
-| Data | `InMemoryGameSessionRepository`, `SimpleArcadeProgression`, `UserDefaultsThemeRepository` |
-| Use Cases | `StartGameUseCase`, `AddDotIfCorrectUseCase`, `CheckThemeUnlocksUseCase` |
+| Data | `InMemoryGameSessionRepository`, `SimpleArcadeProgression`, `UserDefaultsThemeRepository`, `UserDefaultsScoreRepository` |
+| Use Cases | `StartGameUseCase`, `AddDotIfCorrectUseCase`, `CheckThemeUnlocksUseCase`, `EvaluateSelectionUseCase`, `AdvanceDifficultyUseCase` |
 | Presentation | `AppState`, `GameCoordinator`, `AppContainer`, `GameContainerView` |
-| Tools | `FirebaseEventsManager`, `RemoteConfigManager`, `GameCenterManager`, `AudioManager` |
+| Tools | `FirebaseEventsManager`, `RemoteConfigManager`, `GameCenterManager`, `AudioManager`, `AdsManager`, `StoreKitManager` |
 
 Use cases are **callable structs** (`callAsFunction`) — called as `startGame(in: area)`, not `startGame.execute(in: area)`.
 
@@ -48,25 +48,70 @@ Use cases are **callable structs** (`callAsFunction`) — called as `startGame(i
 - **Swift / SwiftUI** — UI
 - **SpriteKit** — game rendering, dot animations, particle effects
 - **GameplayKit** — seeded RNG (`GKARC4RandomSource`) behind a `RandomNumberGenerating` protocol
-- **GameKit** — Game Center leaderboard integration
+- **GameKit** — Game Center leaderboards and achievements
+- **StoreKit 2** — in-app purchases (premium upgrade)
 - **AVFoundation** — background music
 - **Firebase Analytics** — event tracking
 - **Firebase Remote Config** — runtime feature flags and game tuning
+- **Google Mobile Ads** — interstitial ads shown after game over (suppressed for premium users)
 
 ---
 
 ## Theme / Progression System
 
-Players unlock visual themes by accumulating a lifetime score across all sessions:
+Themes unlock either by reaching a cumulative lifetime score or via in-app purchase:
 
 | Theme | Unlock | Vibe |
 |---|---|---|
 | Neon | Free | Cyan grid, neon dot palette |
 | Forest | 50 pts | Green grid, earthy tones |
-| Ocean | 150 pts | Blue grid, cool palette |
-| Cosmos | 350 pts | Purple grid, deep space palette |
+| Ocean | Premium | Cyan-blue grid, cool palette |
+| Cosmos | Premium | Purple grid, deep space palette |
+| Aurora | Premium | Icy blue grid, snowflake-shaped dots |
+| Inferno | Premium | Orange grid, fire-shaped dots |
+| DoctorPing | Premium | Medical blue grid, stethoscope dots |
+| Space Travel | Premium | Dark grid, star-shaped dots |
 
-Each theme applies a unique background color, grid color, and dot palette to both the menus and the live game scene. Milestone values are remotely configurable.
+Each theme applies a unique background color, grid color, and dot palette to both menus and the live game scene. Score-based milestone values (Forest) are remotely configurable.
+
+---
+
+## Premium / Monetization
+
+The app is free to play. A single **Last Dot Premium** IAP (`com.optionalsankur.Dotto.premium`) unlocks:
+
+- Ad-free experience (interstitials suppressed permanently)
+- Ocean and Cosmos themes
+- DoctorPing and Space Travel themes
+
+Aurora and Inferno are also available as individual theme purchases (`com.optionalsankur.Dotto.theme.aurora` / `.theme.inferno`), and are included when the premium bundle is active.
+
+Ads are managed by `AdsManager` (Google Mobile Ads), which shows an interstitial every N game overs and skips it automatically for premium users. `StoreKitManager` handles product fetching, purchase flow, and entitlement verification via StoreKit 2 transaction listeners.
+
+---
+
+## Game Center
+
+`GameCenterManager` integrates leaderboards and achievements.
+
+**Leaderboards**: separate boards for Classic (`lastdot_classic`) and Arcade (`lastdot_arcade`) modes.
+
+**Achievements** (12 total):
+
+| Achievement | Trigger |
+|---|---|
+| `lastdot.first_dot` | Score ≥ 1 in any mode |
+| `lastdot.score10_classic` | Score ≥ 10 in Classic |
+| `lastdot.score25_classic` | Score ≥ 25 in Classic |
+| `lastdot.score50_classic` | Score ≥ 50 in Classic |
+| `lastdot.score100_classic` | Score ≥ 100 in Classic |
+| `lastdot.score10_arcade` | Score ≥ 10 in Arcade |
+| `lastdot.score25_arcade` | Score ≥ 25 in Arcade |
+| `lastdot.score50_arcade` | Score ≥ 50 in Arcade |
+| `lastdot.unlock_forest` | Forest theme unlocked |
+| `lastdot.unlock_ocean` | Ocean theme unlocked |
+| `lastdot.unlock_cosmos` | Cosmos theme unlocked |
+| `lastdot.play_10_games` | 10 games played (progressive) |
 
 ---
 
@@ -83,8 +128,6 @@ Game tuning constants are controlled via Firebase Remote Config — no app updat
 | `arcade_mode_enabled` | true | Feature flag for arcade mode |
 | `default_theme` | neon | Theme applied on first launch |
 | `theme_forest_milestone` | 50 | Forest unlock threshold |
-| `theme_ocean_milestone` | 150 | Ocean unlock threshold |
-| `theme_cosmos_milestone` | 350 | Cosmos unlock threshold |
 
 ---
 
@@ -124,6 +167,9 @@ All events are dispatched through `FirebaseEventsManager`. Key events:
 | `game_quit` | X button tapped mid-game |
 | `theme_unlocked` | Milestone reached |
 | `select_theme` | Theme card tapped |
+| `store_opened` | Purchase screen opened |
+| `iap_purchased` | IAP completed (includes `product_id`) |
+| `iap_restored` | Purchases restored |
 | `onboarding_started` / `completed` / `skipped` | Onboarding funnel |
 | `leaderboard_opened` | Game Center leaderboard tapped |
 
