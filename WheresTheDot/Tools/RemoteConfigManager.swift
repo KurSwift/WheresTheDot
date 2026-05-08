@@ -126,6 +126,7 @@ final class RemoteConfigManager {
         case .cosmos:  key = Keys.cosmosMilestone
         }
         let value = int(key)
+        
         return value > 0 ? value : Theme.theme(for: themeID).unlockScore
     }
 }
