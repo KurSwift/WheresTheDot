@@ -25,6 +25,8 @@ enum DotShape: Equatable {
     case circle
     /// PNG asset from xcassets. Falls back to the SF Symbol if the asset isn't found at runtime.
     case asset(named: String, fallbackSymbol: String)
+    /// Pool of numbered assets (`{prefix}_1` … `{prefix}_{count}`). One is picked randomly per game session.
+    case randomAssets(prefix: String, count: Int, fallbackSymbol: String)
 }
 
 // MARK: - Theme
@@ -79,14 +81,14 @@ extension Theme {
             UIColor(hex: "#FBBF24")
         ],
         accentColor: Color(UIColor(hex: "#4ADE80")),
-        dotShape: .circle
+        dotShape: .randomAssets(prefix: "forest_dot", count: 5, fallbackSymbol: "tree.fill")
     )
 
     static let ocean = Theme(
         id: .ocean,
         name: "Ocean" as LocalizedStringResource,
-        unlockScore: nil,
-        isPremium: true,
+        unlockScore: 200,
+        isPremium: false,
         productID: nil,
         backgroundColor: Color(UIColor(hex: "#03080F")),
         gridColor: Color(UIColor(hex: "#22D3EE")),
@@ -98,14 +100,14 @@ extension Theme {
             UIColor(hex: "#93C5FD")
         ],
         accentColor: Color(UIColor(hex: "#22D3EE")),
-        dotShape: .circle
+        dotShape: .randomAssets(prefix: "ocean_dot", count: 5, fallbackSymbol: "drop.fill")
     )
 
     static let cosmos = Theme(
         id: .cosmos,
         name: "Cosmos" as LocalizedStringResource,
-        unlockScore: nil,
-        isPremium: true,
+        unlockScore: 300,
+        isPremium: false,
         productID: nil,
         backgroundColor: Color(UIColor(hex: "#080510")),
         gridColor: Color(UIColor(hex: "#A855F7")),
@@ -117,7 +119,7 @@ extension Theme {
             UIColor(hex: "#FDE68A")
         ],
         accentColor: Color(UIColor(hex: "#A855F7")),
-        dotShape: .circle
+        dotShape: .randomAssets(prefix: "cosmos_dot", count: 5, fallbackSymbol: "moon.fill")
     )
 
     static let aurora = Theme(
@@ -136,7 +138,7 @@ extension Theme {
             UIColor(hex: "#BAE6FD")
         ],
         accentColor: Color(UIColor(hex: "#7DD3FC")),
-        dotShape: .asset(named: "snowflake", fallbackSymbol: "snowflake")
+        dotShape: .randomAssets(prefix: "aurora_dot", count: 5, fallbackSymbol: "flake")
     )
 
     static let inferno = Theme(

@@ -122,6 +122,21 @@ struct ThemeCardView: View {
                         .foregroundStyle(theme.accentColor.opacity(isUnlocked ? 0.9 : 0.3))
                 }
             }
+        case .randomAssets(let prefix, _, let fallbackSymbol):
+            let previewAsset = "\(prefix)_1"
+            Group {
+                if UIImage(named: previewAsset) != nil {
+                    Image(previewAsset)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 40, height: 40)
+                        .opacity(isUnlocked ? 0.9 : 0.3)
+                } else {
+                    Image(systemName: fallbackSymbol)
+                        .font(.system(size: 32))
+                        .foregroundStyle(theme.accentColor.opacity(isUnlocked ? 0.9 : 0.3))
+                }
+            }
         }
     }
 
