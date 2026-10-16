@@ -20,7 +20,13 @@ enum AdminConfig {
     private static let simulatePremiumKey = "admin.simulatePremium"
 
     static var simulatePremium: Bool {
-        get { isEnabled && UserDefaults.standard.bool(forKey: simulatePremiumKey) }
+        get {
+            #if DEBUG
+            // App Store screenshots show every theme unlocked and no ad banners
+            if CommandLine.arguments.contains("-screenshotMode") { return true }
+            #endif
+            return isEnabled && UserDefaults.standard.bool(forKey: simulatePremiumKey)
+        }
         set { guard isEnabled else { return }
               UserDefaults.standard.set(newValue, forKey: simulatePremiumKey) }
     }

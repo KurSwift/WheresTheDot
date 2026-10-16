@@ -111,6 +111,9 @@ for DEVICE in "${SIMULATORS[@]}"; do
     until xcrun simctl list devices | grep "$UDID" | grep -q "Booted"; do
         sleep 1
     done
+    # Apple-style clean status bar (9:41, full battery, full signal)
+    xcrun simctl status_bar "$UDID" override --time "9:41" --dataNetwork wifi --wifiMode active \
+        --wifiBars 3 --cellularMode active --cellularBars 4 --batteryState charged --batteryLevel 100 || true
     echo "  ✓ $DEVICE booted"
 done
 echo ""
@@ -139,7 +142,7 @@ echo ""
 # Step 3 — Run all device × locale combinations in parallel
 # =============================================================================
 
-log "Running all ${#SIMULATORS[@]} devices × ${#LOCALES[@]} locales in parallel..."
+log "Running ${#SIMULATORS[@]} devices in parallel, ${#LOCALES[@]} locales in sequence..."
 echo ""
 
 # run_combo <locale> <device>
@@ -210,19 +213,17 @@ run_combo() {
 export -f run_combo find_simulator_udid
 export PROJECT SCHEME TEST_TARGET TEST_CLASS OUTPUT_DIR EXTRACT_SCRIPT
 
-# Spawn all combinations in parallel and collect PIDs
-PIDS=()
+# Devices run in parallel; locales run one after another so two test runs never share a simulator
+FAILED=0
 for LOCALE in "${LOCALES[@]}"; do
+    PIDS=()
     for DEVICE in "${SIMULATORS[@]}"; do
         run_combo "$LOCALE" "$DEVICE" &
         PIDS+=($!)
     done
-done
-
-# Wait for every background job to finish
-FAILED=0
-for PID in "${PIDS[@]}"; do
-    wait "$PID" || FAILED=$((FAILED + 1))
+    for PID in "${PIDS[@]}"; do
+        wait "$PID" || FAILED=$((FAILED + 1))
+    done
 done
 
 echo ""

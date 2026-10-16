@@ -37,15 +37,20 @@ final class GameCoordinator: ObservableObject {
     }
 
     func startGame(in area: CGRect) -> Round {
-        let round = start(in: area)
+        var round = start(in: area)
+        #if DEBUG
+        for _ in 1..<ScreenshotSetup.prefilledDots {
+            if case .correct(let next) = addIfCorrect(tapped: round.newDotID, in: area) { round = next }
+        }
+        #endif
         roundIndex = round.index
         score = round.dots.count
         message = ""
-        currentLevel = 1
+        currentLevel = progression?.state(forScore: score).level ?? 1
         showLevelUp = false
         gameStartedAt = Date()
         if let p = progression {
-            timeLimitForRound = p.difficulty(for: 1).timeLimit
+            timeLimitForRound = p.difficulty(for: currentLevel).timeLimit
         }
         return round
     }

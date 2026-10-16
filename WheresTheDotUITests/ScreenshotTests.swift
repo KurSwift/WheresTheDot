@@ -7,7 +7,8 @@
 //
 //  To run a single test manually in Xcode, set these scheme arguments:
 //    -screenshotMode
-//    -screenshotTheme <neon|forest|ocean|cosmos>
+//    -screenshotTheme <themeID>   (any ThemeID raw value)
+//    -screenshotDots <n>          (optional: start games with n dots)
 //
 
 import XCTest
@@ -41,21 +42,25 @@ final class ScreenshotTests: XCTestCase {
 
     // MARK: - Gameplay
 
-    func test03_Gameplay() {
-        launch(theme: "neon")
-        app.buttons["btn_classic_mode"].tap()
-        // Wait for SpriteKit scene to load and first dot to appear
-        wait(seconds: 3)
-        snapshot("03_gameplay")
+    /// Mid-game classic board (14 dots) for every theme; pick the best ones for the store.
+    func test03_GameplayAllThemes() {
+        for theme in ["neon", "forest", "ocean", "cosmos", "aurora", "inferno", "doctorping", "spacetravel"] {
+            launch(theme: theme, dots: 14)
+            app.buttons["btn_classic_mode"].tap()
+            // Wait for SpriteKit scene to load and the staggered dot animation to settle
+            wait(seconds: 4)
+            snapshot("03_gameplay_\(theme)")
+            app.terminate()
+        }
     }
 
     func test04_ArcadeMode() {
-        launch(theme: "neon")
+        launch(theme: "cosmos", dots: 18)
         // Arcade Mode button is shown when arcadeModeEnabled Remote Config is true (default)
         let arcadeButton = app.buttons["btn_arcade_mode"]
         guard arcadeButton.waitForExistence(timeout: 3) else { return }
         arcadeButton.tap()
-        wait(seconds: 3)
+        wait(seconds: 4)
         snapshot("04_arcade_gameplay")
     }
 
@@ -79,8 +84,8 @@ final class ScreenshotTests: XCTestCase {
 
     // MARK: - Helpers
 
-    private func launch(theme: String) {
-        app.launchArguments = ["-screenshotMode", "-screenshotTheme", theme]
+    private func launch(theme: String, dots: Int = 1) {
+        app.launchArguments = ["-screenshotMode", "-screenshotTheme", theme, "-screenshotDots", "\(dots)"]
         app.launch()
         // Wait for main menu to be fully visible (uses accessibilityIdentifier — locale-independent)
         _ = app.buttons["btn_classic_mode"].waitForExistence(timeout: 5)
