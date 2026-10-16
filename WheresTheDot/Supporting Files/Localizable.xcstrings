@@ -1494,6 +1494,40 @@
           }
         }
       }
+    },
+    "BEST %lld" : {
+      "comment" : "Personal best score for the mode, shown on the game over screen.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RÉCORD %lld"
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RÉCORD %lld"
+          }
+        }
+      }
+    },
+    "NEW BEST!" : {
+      "comment" : "Shown on the game over screen when the player beats their personal best.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¡NUEVO RÉCORD!"
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¡NUEVO RÉCORD!"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

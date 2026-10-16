@@ -81,11 +81,13 @@ final class RemoteConfigManager {
         static let forestMilestone       = "theme_forest_milestone"
         static let oceanMilestone        = "theme_ocean_milestone"
         static let cosmosMilestone       = "theme_cosmos_milestone"
+        static let adFrequency           = "ad_frequency"
 
         static let all: [String] = [
             arcadeTimeLimitBase, arcadeDifficultyStep, memoryCoverDuration,
             onboardingEnabled, arcadeModeEnabled, defaultTheme,
-            forestMilestone, oceanMilestone, cosmosMilestone
+            forestMilestone, oceanMilestone, cosmosMilestone,
+            adFrequency
         ]
     }
 
@@ -105,6 +107,9 @@ final class RemoteConfigManager {
 
     /// Whether arcade mode is available in the main menu. Default: true.
     var arcadeModeEnabled: Bool { bool(Keys.arcadeModeEnabled) }
+
+    /// Game-overs between interstitial ads. Default: 3.
+    var adFrequency: Int { int(Keys.adFrequency) }
 
     /// ThemeID used for first-time users before they pick a theme. Default: "neon".
     var defaultTheme: ThemeID {

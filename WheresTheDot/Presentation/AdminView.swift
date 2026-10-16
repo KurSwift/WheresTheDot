@@ -206,7 +206,7 @@ struct AdminView: View {
             Button {
                 AdsManager.shared.resetCounter()
             } label: {
-                Label("Reset ad counter  (count: \(ads.gameOverCount)/3)", systemImage: "arrow.counterclockwise")
+                Label("Reset ad counter  (count: \(ads.gameOverCount)/\(ads.adFrequency))", systemImage: "arrow.counterclockwise")
             }
 
             Button {

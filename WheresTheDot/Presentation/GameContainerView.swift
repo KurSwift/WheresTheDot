@@ -8,6 +8,7 @@
 import SwiftUI
 import SpriteKit
 import GameKit
+import StoreKit
 
 struct GameContainerView: View {
     @EnvironmentObject private var appState: AppState
@@ -25,6 +26,8 @@ struct GameContainerView: View {
     @State private var timerBarStart: Date? = nil
     @State private var newlyUnlockedThemes: [Theme] = []
     @State private var unlockBannerVisible = false
+    @State private var bestScoreResult: BestScoreResult?
+    @Environment(\.requestReview) private var requestReview
 
     private var onboardingText: LocalizedStringResource? {
         switch onboardingStep {
@@ -139,8 +142,7 @@ struct GameContainerView: View {
         .animation(.spring(response: 0.45, dampingFraction: 0.82), value: unlockBannerVisible)
         .onChange(of: coordinator.message) { _, newValue in
             if newValue == "Time's up!" {
-                FirebaseEventsManager.logGameOver(reason: .timeUp, score: coordinator.score, mode: mode)
-                AdsManager.shared.recordGameOver()
+                handleGameOver(reason: .timeUp)
                 gameOverVisible = true
             } else if newValue == "Game Over" {
                 Task { @MainActor in
@@ -284,7 +286,7 @@ private extension GameContainerView {
             if mode == .arcade, let limit = coordinator.timeLimitForRound {
                 timerBarStart = Date()
                 scene.startRoundTimer(seconds: limit) {
-                    coordinator.message = "Time's up!"
+                    coordinator.timeUp()
                     scene.setInputEnabled(false)
                     timerBarStart = nil
                 }
@@ -419,6 +421,21 @@ private extension GameContainerView {
                         .font(.system(size: 88, weight: .black, design: .rounded))
                         .foregroundStyle(.white)
                         .shadow(color: .white.opacity(0.18), radius: 10, x: 0, y: 0)
+
+                    if let best = bestScoreResult {
+                        if best.isNewBest && best.previousBest > 0 {
+                            Text("NEW BEST!")
+                                .font(.system(size: 18, weight: .black, design: .rounded))
+                                .foregroundStyle(Color.neonLime)
+                                .kerning(2)
+                                .shadow(color: Color.neonLime.opacity(0.7), radius: 12)
+                        } else {
+                            Text("BEST \(best.best)")
+                                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                .foregroundStyle(.white.opacity(0.55))
+                                .kerning(3)
+                        }
+                    }
                 }
 
                 // Action buttons
@@ -547,7 +564,7 @@ private extension GameContainerView {
         func startArcadeTimer(limit: TimeInterval) {
             timerBarStart = Date()
             scene.startRoundTimer(seconds: limit) {
-                coordinator.message = "Time's up!"
+                coordinator.timeUp()
                 scene.setInputEnabled(false)
                 timerBarStart = nil
             }
@@ -665,31 +682,48 @@ private extension GameContainerView {
                 scene.showOutcome(.wrong(chosenID: tappedID, newDotID: correctDotID))
                 scene.setInputEnabled(false)
                 timerBarStart = nil
-                FirebaseEventsManager.logGameOver(reason: .wrongTap, score: coordinator.score, mode: mode)
-                AdsManager.shared.recordGameOver()
-
-                let unlocked = appState.checkThemeUnlocks(score: coordinator.score)
-                if !unlocked.isEmpty {
-                    unlocked.forEach { FirebaseEventsManager.logThemeUnlocked($0.id) }
-                    unlocked.forEach { theme in
-                        switch theme.id {
-                        case .forest: GameCenterManager.shared.reportAchievement(.unlockForest)
-                        case .ocean:  GameCenterManager.shared.reportAchievement(.unlockOcean)
-                        case .cosmos: GameCenterManager.shared.reportAchievement(.unlockCosmos)
-                        default: break
-                        }
-                    }
-                    newlyUnlockedThemes = unlocked
-                    unlockBannerVisible = true
-                    Task { @MainActor in
-                        try? await Task.sleep(nanoseconds: 3_500_000_000)
-                        unlockBannerVisible = false
-                    }
-                }
+                handleGameOver(reason: .wrongTap)
             }
         }
 
         self.scene = scene
+    }
+
+    /// Shared bookkeeping for every game-over path (wrong tap and arcade time-up).
+    @MainActor
+    private func handleGameOver(reason: GameOverReason) {
+        let score = coordinator.score
+        FirebaseEventsManager.logGameOver(reason: reason, score: score, mode: mode)
+        let adShown = AdsManager.shared.recordGameOver()
+
+        let result = appState.recordBestScore(score: score, mode: mode)
+        bestScoreResult = result
+        // Ask for a review after a meaningful new record, never on top of an ad
+        if result.isNewBest, result.previousBest >= 5, !adShown {
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 1_500_000_000)
+                requestReview()
+            }
+        }
+
+        let unlocked = appState.checkThemeUnlocks(score: score)
+        if !unlocked.isEmpty {
+            unlocked.forEach { FirebaseEventsManager.logThemeUnlocked($0.id) }
+            unlocked.forEach { theme in
+                switch theme.id {
+                case .forest: GameCenterManager.shared.reportAchievement(.unlockForest)
+                case .ocean:  GameCenterManager.shared.reportAchievement(.unlockOcean)
+                case .cosmos: GameCenterManager.shared.reportAchievement(.unlockCosmos)
+                default: break
+                }
+            }
+            newlyUnlockedThemes = unlocked
+            unlockBannerVisible = true
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 3_500_000_000)
+                unlockBannerVisible = false
+            }
+        }
     }
 
     @MainActor

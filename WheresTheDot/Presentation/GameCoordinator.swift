@@ -75,15 +75,24 @@ final class GameCoordinator: ObservableObject {
 
         case .wrong(let gameOverScore, _):
             score = gameOverScore
-            message = "Game Over"
-            timeLimitForRound = nil
-            let duration = gameStartedAt.map { Date().timeIntervalSince($0) } ?? 0
-            FirebaseEventsManager.logGameEnded(duration: duration, score: gameOverScore, mode: mode)
-            GameCenterManager.shared.submitScore(gameOverScore, for: mode)
-            GameCenterManager.shared.reportScoreAchievements(score: gameOverScore, mode: mode)
-            GameCenterManager.shared.trackGamePlayed()
-            gameStartedAt = nil
+            finishGame(message: "Game Over")
         }
         return outcome
+    }
+
+    /// Arcade timer ran out: ends the game with the current score.
+    func timeUp() {
+        finishGame(message: "Time's up!")
+    }
+
+    private func finishGame(message: String) {
+        self.message = message
+        timeLimitForRound = nil
+        let duration = gameStartedAt.map { Date().timeIntervalSince($0) } ?? 0
+        FirebaseEventsManager.logGameEnded(duration: duration, score: score, mode: mode)
+        GameCenterManager.shared.submitScore(score, for: mode)
+        GameCenterManager.shared.reportScoreAchievements(score: score, mode: mode)
+        GameCenterManager.shared.trackGamePlayed()
+        gameStartedAt = nil
     }
 }

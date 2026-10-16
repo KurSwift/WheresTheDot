@@ -6,3 +6,8 @@
 //
 
 import Foundation
+
+protocol ScoreRepository: AnyObject {
+    func bestScore(for mode: GameMode) -> Int
+    func setBestScore(_ score: Int, for mode: GameMode)
+}

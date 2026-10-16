@@ -18,7 +18,6 @@ final class AdsManager: NSObject, ObservableObject {
     private static let interstitialUnitID     = "ca-app-pub-2353567800479707/5067427797"
     private static let testInterstitialUnitID = "ca-app-pub-3940256099942544/4411468910"
 
-    private let adFrequency = 3
     private let countKey = "ads.gameOverCount"
 
     @Published private(set) var isAdLoaded = false
@@ -56,14 +55,20 @@ final class AdsManager: NSObject, ObservableObject {
         presentAd()
     }
 
+    /// Interstitial shown every N game-overs (Remote Config `ad_frequency`).
+    var adFrequency: Int { max(1, RemoteConfigManager.shared.adFrequency) }
+
     /// Call on every game-over. Shows an interstitial every `adFrequency` calls
-    /// unless the user has purchased Premium.
-    func recordGameOver() {
-        guard !StoreKitManager.shared.isAdFree else { return }
+    /// unless the user has purchased Premium. Returns whether an ad was presented.
+    @discardableResult
+    func recordGameOver() -> Bool {
+        guard !StoreKitManager.shared.isAdFree else { return false }
         gameOverCount += 1
-        guard gameOverCount >= adFrequency else { return }
+        guard gameOverCount >= adFrequency else { return false }
         gameOverCount = 0
+        let willShow = isAdLoaded
         presentAd()
+        return willShow
     }
 
     // MARK: - AdMob

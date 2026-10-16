@@ -175,6 +175,7 @@ Key events: `select_game_mode`, `game_over`, `game_ended`, `game_quit`, `round_c
 | `theme_forest_milestone` | Forest unlock threshold |
 | `theme_ocean_milestone` | Ocean unlock threshold |
 | `theme_cosmos_milestone` | Cosmos unlock threshold |
+| `ad_frequency` | Game-overs between interstitial ads (default 3) |
 
 Offline defaults live in `Supporting Files/remote_config_defaults.plist`.
 
@@ -197,7 +198,7 @@ Offline defaults live in `Supporting Files/remote_config_defaults.plist`.
 
 ### Ads (AdMob)
 
-`AdsManager.shared` shows interstitial ads every 3rd game-over, guarded by `StoreKitManager.shared.isAdFree`. Integration requires:
+`AdsManager.shared` shows interstitial ads every N game-overs (Remote Config `ad_frequency`), guarded by `StoreKitManager.shared.isAdFree`. Integration requires:
 1. SPM package: `https://github.com/googleads/swift-package-manager-google-mobile-ads.git`
 2. `GADApplicationIdentifier` key in Info.plist
 3. Real unit ID in `AdsManager.swift`
