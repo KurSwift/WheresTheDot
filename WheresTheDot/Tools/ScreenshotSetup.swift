@@ -11,8 +11,18 @@ import UIKit
 /// Activated by the `-screenshotMode` launch argument.
 /// Supported arguments:
 ///   -screenshotMode               Enable screenshot mode (required)
-///   -screenshotTheme <themeID>    Set active theme (neon | forest | ocean | cosmos)
+///   -screenshotTheme <themeID>    Set active theme (any ThemeID raw value)
+///   -screenshotDots <n>           Start games with n dots already placed
 enum ScreenshotSetup {
+
+    /// Number of dots a new game starts with in screenshot mode (1 = normal start).
+    static var prefilledDots: Int {
+        guard CommandLine.arguments.contains("-screenshotMode"),
+              let idx = CommandLine.arguments.firstIndex(of: "-screenshotDots"),
+              idx + 1 < CommandLine.arguments.count,
+              let n = Int(CommandLine.arguments[idx + 1]) else { return 1 }
+        return max(1, n)
+    }
 
     static func configureIfNeeded() {
         guard CommandLine.arguments.contains("-screenshotMode") else { return }
@@ -34,6 +44,9 @@ enum ScreenshotSetup {
         } else {
             defaults.set(ThemeID.neon.rawValue, forKey: "activeThemeID")
         }
+
+        // Long arcade timer so prefilled arcade games don't time out before the capture
+        defaults.set(60.0, forKey: "rc.override.arcade_time_limit_base")
 
         // Disable UIKit animations so screenshots catch the final settled state
         UIView.setAnimationsEnabled(false)
