@@ -204,22 +204,20 @@ final class GameScene: SKScene {
         let oldDots = round.dots.filter { $0.id != round.newDotID }
         let newDot  = round.dots.first  { $0.id == round.newDotID }
 
-        let staggerStep: TimeInterval = 0.025
-        let newDotDelay: TimeInterval = TimeInterval(oldDots.count) * staggerStep + 0.05
+        // All dots pop in together: a staggered entrance revealed the newest dot (it always appeared last)
         let popInDuration: TimeInterval = 0.14
 
         for (i, dot) in oldDots.enumerated() {
             let t = CGFloat(i) / CGFloat(max(score - 1, 1))
             let alpha: CGFloat = dotAlpha(for: level, t: t)
-            spawnDot(dot, color: baseColor, alpha: alpha, delay: TimeInterval(i) * staggerStep)
+            spawnDot(dot, color: baseColor, alpha: alpha, delay: 0)
         }
 
         if let dot = newDot {
-            // New dot uses the same alpha as the rest — timing is the only cue
-            spawnDot(dot, color: baseColor, alpha: dotAlpha(for: level, t: 1.0), delay: newDotDelay)
+            spawnDot(dot, color: baseColor, alpha: dotAlpha(for: level, t: 1.0), delay: 0)
         }
 
-        return newDotDelay + popInDuration
+        return popInDuration
     }
 
     private func spawnDot(_ dot: Dot, color: UIColor, alpha: CGFloat, delay: TimeInterval) {
