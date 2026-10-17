@@ -85,7 +85,7 @@ final class ScreenshotTests: XCTestCase {
     // MARK: - Duel
 
     func test07_Duel() {
-        launch(theme: "neon", dots: 8)
+        launch(theme: "cosmos", dots: 8)
         let duelButton = app.buttons["btn_duel_mode"]
         guard duelButton.waitForExistence(timeout: 3) else { return }
         duelButton.tap()
