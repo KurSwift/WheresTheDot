@@ -1,0 +1,5 @@
+# Large design sources and videos go through Git LFS (brew install git-lfs && git lfs install)
+marketing/**/*.sketch filter=lfs diff=lfs merge=lfs -text
+marketing/**/*.mov    filter=lfs diff=lfs merge=lfs -text
+marketing/**/*.mp4    filter=lfs diff=lfs merge=lfs -text
+marketing/**/*.m4v    filter=lfs diff=lfs merge=lfs -text
