@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import FirebaseCore
+import FirebaseAnalytics
 import AppTrackingTransparency
 
 #if canImport(GoogleMobileAds)
@@ -21,6 +22,13 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     ScreenshotSetup.configureIfNeeded()
     #endif
     FirebaseApp.configure()
+    // Keep simulator / Xcode / screenshot runs out of production analytics.
+    // Set explicitly in Release too: the flag persists on the device across installs.
+    #if DEBUG
+    Analytics.setAnalyticsCollectionEnabled(false)
+    #else
+    Analytics.setAnalyticsCollectionEnabled(true)
+    #endif
     Task { await RemoteConfigManager.shared.fetchAndActivate() }
 
     // Prime StoreKit immediately so transaction listener starts
