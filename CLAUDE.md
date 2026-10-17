@@ -103,6 +103,7 @@ Protocol names use the `-ing` suffix: `DotLayoutGenerating`, `RandomNumberGenera
 - **Classic**: No time limit, endless rounds
 - **Arcade**: Difficulty scales every N points (configurable via Remote Config `arcade_difficulty_step`). Radius shrinks, timing tightens, dot size variation increases.
 - **Daily**: Deterministic seed (in progress)
+- **Duel** (`AppRoute.duel`, `DuelView`): two players, one device. Not a `GameMode` (no leaderboards or best scores). The scene is split between two halves (`DuelBoardLayout`: top/bottom, left/right on wide windows or along the iPhone Duo fold); `GameScene.mirrorsBoard` draws player one's board a second time, mirrored through the center, for player two. `ResolveDuelTapUseCase`: first to tap the newest dot scores, a wrong dot scores for the rival, and the board grows by one dot either way. First to `duel_target_score` wins.
 
 ## Theme System
 
@@ -156,7 +157,7 @@ enum DotShape: Equatable {
 
 All events go through `FirebaseEventsManager` (static methods only). `GameOverReason` enum provides typed `reason` parameters (`wrongTap` / `timeUp`).
 
-Key events: `select_game_mode`, `game_over`, `game_ended`, `game_quit`, `round_correct`, `open_themes`, `select_theme`, `theme_unlocked`, `unlock_theme`, `open_store`, `purchase_initiated`, `purchase_completed`, `onboarding_started`, `onboarding_intro_dismissed`, `onboarding_completed`, `onboarding_skipped`, `leaderboard_opened`, `achievements_opened`, `open_settings`, `sound_enabled/disabled`, `haptics_enabled/disabled`, `color_blind_mode_enabled/disabled`.
+Key events: `select_game_mode` (`mode` = `classic` / `arcade` / `duel`), `duel_ended`, `duel_quit`, `game_over`, `game_ended`, `game_quit`, `round_correct`, `open_themes`, `select_theme`, `theme_unlocked`, `unlock_theme`, `open_store`, `purchase_initiated`, `purchase_completed`, `onboarding_started`, `onboarding_intro_dismissed`, `onboarding_completed`, `onboarding_skipped`, `leaderboard_opened`, `achievements_opened`, `open_settings`, `sound_enabled/disabled`, `haptics_enabled/disabled`, `color_blind_mode_enabled/disabled`.
 
 ## Firebase Remote Config
 
@@ -176,6 +177,8 @@ Key events: `select_game_mode`, `game_over`, `game_ended`, `game_quit`, `round_c
 | `theme_ocean_milestone` | Ocean unlock threshold |
 | `theme_cosmos_milestone` | Cosmos unlock threshold |
 | `ad_frequency` | Game-overs between interstitial ads (default 3) |
+| `duel_mode_enabled` | Feature flag for duel mode |
+| `duel_target_score` | Points needed to win a duel (default 5) |
 
 Offline defaults live in `Supporting Files/remote_config_defaults.plist`.
 
@@ -260,6 +263,7 @@ Call `AdsManager.shared.recordGameOver()` on both wrong-tap and time-up game-ove
 `AppRoute` enum drives all navigation via `RootView`:
 - `.mainMenu`
 - `.game(GameMode)` — `GameMode`: `.classic`, `.arcade`, `.daily(seed: UInt64)`
+- `.duel` — `DuelView`, two players on one device
 - `.settings`
 - `.themes`
 - `.store` — `PurchaseView` premium purchase sheet

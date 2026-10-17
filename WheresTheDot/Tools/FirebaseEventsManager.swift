@@ -84,6 +84,33 @@ enum FirebaseEventsManager {
         ])
     }
 
+    // MARK: - Duel
+
+    static func logDuelSelected() {
+        Analytics.logEvent("select_game_mode", parameters: [
+            "mode": "duel"
+        ])
+    }
+
+    static func logDuelEnded(score: DuelScore, rounds: Int, duration: TimeInterval) {
+        Analytics.logEvent("duel_ended", parameters: [
+            "winner": score.winner?.rawValue ?? 0,
+            "score_one": score.points(for: .one),
+            "score_two": score.points(for: .two),
+            "target": score.target,
+            "rounds": rounds,
+            "duration_seconds": Int(duration)
+        ])
+    }
+
+    static func logDuelQuit(score: DuelScore, rounds: Int) {
+        Analytics.logEvent("duel_quit", parameters: [
+            "score_one": score.points(for: .one),
+            "score_two": score.points(for: .two),
+            "rounds": rounds
+        ])
+    }
+
     // MARK: - Themes
 
     static func logThemeUnlocked(_ themeID: ThemeID) {

@@ -10,6 +10,7 @@ import Foundation
 enum AppRoute: Equatable {
     case mainMenu
     case game(GameMode)
+    case duel
     case settings
     case themes
     case store

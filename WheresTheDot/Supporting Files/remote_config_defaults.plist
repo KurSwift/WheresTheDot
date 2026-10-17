@@ -19,6 +19,12 @@
     <key>arcade_mode_enabled</key>
     <true/>
 
+    <key>duel_mode_enabled</key>
+    <true/>
+
+    <key>duel_target_score</key>
+    <integer>5</integer>
+
     <!-- Themes -->
     <key>default_theme</key>
     <string>neon</string>

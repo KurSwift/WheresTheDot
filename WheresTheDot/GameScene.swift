@@ -7,6 +7,11 @@ final class GameScene: SKScene {
     /// Called when the scene is resized after it became ready (iPhone Duo fold/unfold, iPad resize).
     var onSizeChanged: ((_ oldSize: CGSize, _ newSize: CGSize) -> Void)?
     var onDotTapped: ((UUID) -> Void)?
+    /// Same as `onDotTapped`, plus where the touch landed (duel uses it to tell the players apart).
+    var onDotTappedAt: ((UUID, CGPoint) -> Void)?
+    /// Duel: every dot is drawn a second time, mirrored through the scene center and rotated,
+    /// so the player facing the opposite edge sees the same board. Enables multi-touch.
+    var mirrorsBoard = false
     var onTapFeedback: (() -> Void)?
 
     private var inputEnabled = false
@@ -72,6 +77,7 @@ final class GameScene: SKScene {
         // If you created with .init(size:), this is already correct.
         // But keeping it safe in case the view resizes:
         self.size = view.bounds.size
+        view.isMultipleTouchEnabled = mirrorsBoard
         backgroundColor = themeBackgroundColor
         let tap = SKAction.playSoundFileNamed("tap.wav", waitForCompletion: false)
         run(.sequence([tap, .wait(forDuration: 0.01)]))
@@ -176,11 +182,20 @@ final class GameScene: SKScene {
     var reservedRects: [CGRect] {
         guard #available(iOS 27.1, *), let view else { return [] }
         let regions = view.reservedRegions(kind: .occlusion) + view.reservedRegions(kind: .division)
-        return regions.filter(\.isActive).map { region in
-            let a = convertPoint(fromView: CGPoint(x: region.frame.minX, y: region.frame.minY))
-            let b = convertPoint(fromView: CGPoint(x: region.frame.maxX, y: region.frame.maxY))
-            return CGRect(x: min(a.x, b.x), y: min(a.y, b.y), width: abs(a.x - b.x), height: abs(a.y - b.y))
-        }
+        return regions.filter(\.isActive).map { sceneRect(fromView: $0.frame) }
+    }
+
+    /// The fold, in scene coordinates, whether or not the device is partly folded. Duel splits the screen along it.
+    var foldFrame: CGRect? {
+        guard #available(iOS 27.1, *), let view,
+              let fold = view.reservedRegions(kind: .division).first else { return nil }
+        return sceneRect(fromView: fold.frame)
+    }
+
+    private func sceneRect(fromView rect: CGRect) -> CGRect {
+        let a = convertPoint(fromView: CGPoint(x: rect.minX, y: rect.minY))
+        let b = convertPoint(fromView: CGPoint(x: rect.maxX, y: rect.maxY))
+        return CGRect(x: min(a.x, b.x), y: min(a.y, b.y), width: abs(a.x - b.x), height: abs(a.y - b.y))
     }
 
     private func notifyReadyIfNeeded() {
@@ -228,17 +243,25 @@ final class GameScene: SKScene {
         for (i, dot) in oldDots.enumerated() {
             let t = CGFloat(i) / CGFloat(max(score - 1, 1))
             let alpha: CGFloat = dotAlpha(for: level, t: t)
-            spawnDot(dot, color: baseColor, alpha: alpha, delay: 0)
+            spawnBoardDot(dot, color: baseColor, alpha: alpha)
         }
 
         if let dot = newDot {
-            spawnDot(dot, color: baseColor, alpha: dotAlpha(for: level, t: 1.0), delay: 0)
+            spawnBoardDot(dot, color: baseColor, alpha: dotAlpha(for: level, t: 1.0))
         }
 
         return popInDuration
     }
 
-    private func spawnDot(_ dot: Dot, color: UIColor, alpha: CGFloat, delay: TimeInterval) {
+    private func spawnBoardDot(_ dot: Dot, color: UIColor, alpha: CGFloat) {
+        spawnDot(dot, color: color, alpha: alpha, delay: 0)
+        guard mirrorsBoard else { return }
+        let mirrored = CGPoint(x: size.width - dot.position.x, y: size.height - dot.position.y)
+        spawnDot(Dot(id: dot.id, position: mirrored, radius: dot.radius),
+                 color: color, alpha: alpha, delay: 0, rotation: .pi)
+    }
+
+    private func spawnDot(_ dot: Dot, color: UIColor, alpha: CGFloat, delay: TimeInterval, rotation: CGFloat = 0) {
         let pop = SKAction.scale(to: 1.0, duration: 0.14)
         pop.timingMode = .easeOut
         let wait = SKAction.wait(forDuration: delay)
@@ -278,6 +301,7 @@ final class GameScene: SKScene {
             )
             sprite.name = "dot"
             sprite.position = dot.position
+            sprite.zRotation = rotation
             sprite.zPosition = 1
             sprite.userData = ["id": dot.id.uuidString, "radius": dot.radius]
             sprite.setScale(0.0)
@@ -311,9 +335,12 @@ final class GameScene: SKScene {
     }
 
     func dotNode(id: UUID) -> SKNode? {
-        children
-            .filter { $0.name == "dot" }
-            .first(where: { ($0.userData?["id"] as? String) == id.uuidString })
+        dotNodes(id: id).first
+    }
+
+    /// Every node drawn for a dot: one, or two when the board is mirrored.
+    private func dotNodes(id: UUID) -> [SKNode] {
+        children.filter { $0.name == "dot" && ($0.userData?["id"] as? String) == id.uuidString }
     }
 
     func showOutcome(_ outcome: RoundOutcome) {
@@ -326,7 +353,7 @@ final class GameScene: SKScene {
         case .noSelection(let id): correctID = id
         }
 
-        if let node = dotNode(id: correctID) {
+        for node in dotNodes(id: correctID) {
             let pulseUp = SKAction.scale(to: 1.4, duration: 0.12)
             let pulseDown = SKAction.scale(to: 1.0, duration: 0.12)
             node.run(.sequence([pulseUp, pulseDown]))
@@ -404,18 +431,23 @@ final class GameScene: SKScene {
     // MARK: - Touches
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard inputEnabled, let touch = touches.first else { return }
+        // Duel: both players may lift a finger in the same frame; the first one wins the round
+        for touch in mirrorsBoard ? Array(touches) : Array(touches.prefix(1)) {
+            guard inputEnabled else { return }
+            handleTouch(at: touch.location(in: self))
+        }
+    }
 
-        let p = touch.location(in: self)
+    private func handleTouch(at p: CGPoint) {
         onTapFeedback?()
 
         // Use distance-based hit detection with a tap padding buffer.
         // This keeps the visual size unchanged while making small dots easier to tap.
         let tapPadding: CGFloat = 8
-        let dotNodes = children.filter { $0.name == "dot" }
+        let candidates = children.filter { $0.name == "dot" }
 
         // Pick the closest dot within tap range (avoids ambiguity when dots are near each other)
-        let hit = dotNodes
+        let hit = candidates
             .compactMap { node -> (SKNode, CGFloat)? in
                 guard let radius = node.userData?["radius"] as? CGFloat else { return nil }
                 let dx = p.x - node.position.x
@@ -430,6 +462,7 @@ final class GameScene: SKScene {
            let idString = node.userData?["id"] as? String,
            let id = UUID(uuidString: idString) {
             onDotTapped?(id)
+            onDotTappedAt?(id, p)
         }
     }
     
@@ -463,10 +496,9 @@ final class GameScene: SKScene {
     
     /// Optional: pulse a specific dot (newest dot) to guide player slightly
     func pulseDot(id: UUID) {
-        guard let node = dotNode(id: id) else { return }
         let up = SKAction.scale(to: 1.35, duration: 0.10)
         let down = SKAction.scale(to: 1.0, duration: 0.10)
-        node.run(.sequence([up, down]))
+        dotNodes(id: id).forEach { $0.run(.sequence([up, down])) }
     }
     
     private var roundTimerTask: Task<Void, Never>?

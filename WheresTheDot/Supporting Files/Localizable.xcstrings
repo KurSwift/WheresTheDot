@@ -1536,6 +1536,125 @@
           }
         }
       }
+    },
+    "Close" : {
+      "comment" : "Accessibility label for the button that leaves a duel.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerrar"
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerrar"
+          }
+        }
+      }
+    },
+    "Duel Mode" : {
+      "comment" : "Main menu button that starts a two-player duel on one device.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modo Duelo"
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modo Duelo"
+          }
+        }
+      }
+    },
+    "First to %lld" : {
+      "comment" : "Duel scoreboard caption: points needed to win the match.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A %lld puntos"
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A %lld puntos"
+          }
+        }
+      }
+    },
+    "Rematch" : {
+      "comment" : "Button that starts a new duel against the same rival.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revancha"
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revancha"
+          }
+        }
+      }
+    },
+    "Tap the NEW dot before your rival.\nWrong dot = point for your rival." : {
+      "comment" : "Duel rules shown during the countdown before a match.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toca el punto NUEVO antes que tu rival.\nPunto equivocado = punto para tu rival."
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toca el punto NUEVO antes que tu rival.\nPunto equivocado = punto para tu rival."
+          }
+        }
+      }
+    },
+    "YOU LOSE" : {
+      "comment" : "Duel result shown to the player who lost the match.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PERDISTE"
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PERDISTE"
+          }
+        }
+      }
+    },
+    "YOU WIN!" : {
+      "comment" : "Duel result shown to the player who won the match.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¡GANASTE!"
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¡GANASTE!"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

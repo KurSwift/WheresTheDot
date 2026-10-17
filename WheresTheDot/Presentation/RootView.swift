@@ -19,6 +19,8 @@ struct RootView: View {
                 MainMenuView()
             case .game(let mode):
                 GameContainerView(mode: mode)
+            case .duel:
+                DuelView()
             case .settings:
                 SettingsView()
             case .themes:
