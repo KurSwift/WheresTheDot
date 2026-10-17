@@ -23,7 +23,7 @@
     <true/>
 
     <key>duel_target_score</key>
-    <integer>5</integer>
+    <integer>10</integer>
 
     <!-- Themes -->
     <key>default_theme</key>

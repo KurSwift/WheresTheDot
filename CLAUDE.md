@@ -178,7 +178,7 @@ Key events: `select_game_mode` (`mode` = `classic` / `arcade` / `duel`), `duel_e
 | `theme_cosmos_milestone` | Cosmos unlock threshold |
 | `ad_frequency` | Game-overs between interstitial ads (default 3) |
 | `duel_mode_enabled` | Feature flag for duel mode |
-| `duel_target_score` | Points needed to win a duel (default 5) |
+| `duel_target_score` | Points needed to win a duel (default 10) |
 
 Offline defaults live in `Supporting Files/remote_config_defaults.plist`.
 

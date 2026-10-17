@@ -116,7 +116,7 @@ final class RemoteConfigManager {
     /// Whether duel (two players, one device) is available in the main menu. Default: true.
     var duelModeEnabled: Bool { bool(Keys.duelModeEnabled) }
 
-    /// Points needed to win a duel. Default: 5.
+    /// Points needed to win a duel. Default: 10.
     var duelTargetScore: Int { max(1, int(Keys.duelTargetScore)) }
 
     /// ThemeID used for first-time users before they pick a theme. Default: "neon".
