@@ -37,6 +37,10 @@ final class GameCenterManager: ObservableObject {
 
     private let gamesPlayedKey = "gamesPlayedForAchievement"
 
+    /// Achievements already completed on Game Center. They are never re-reported,
+    /// otherwise Game Center shows the completion banner again on every game.
+    private var completedAchievementIDs: Set<String> = []
+
     private init() {}
 
     func authenticateLocalPlayer() {
@@ -47,6 +51,7 @@ final class GameCenterManager: ObservableObject {
                     UIApplication.shared.topViewController?.present(vc, animated: true)
                 } else if GKLocalPlayer.local.isAuthenticated {
                     self?.isAuthenticated = true
+                    self?.loadCompletedAchievements()
                 } else {
                     self?.isAuthenticated = false
                 }
@@ -79,13 +84,25 @@ final class GameCenterManager: ObservableObject {
     }
 
     func reportAchievement(_ achievement: Achievement, percentComplete: Double = 100.0) {
-        guard isAuthenticated else { return }
+        guard isAuthenticated, !completedAchievementIDs.contains(achievement.rawValue) else { return }
+        if percentComplete >= 100 { completedAchievementIDs.insert(achievement.rawValue) }
         let gkAchievement = GKAchievement(identifier: achievement.rawValue)
         gkAchievement.percentComplete = percentComplete
         gkAchievement.showsCompletionBanner = true
         GKAchievement.report([gkAchievement]) { error in
             if let error {
                 print("[GameCenter] Achievement report failed (\(achievement.rawValue)): \(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func loadCompletedAchievements() {
+        Task {
+            do {
+                let achievements = try await GKAchievement.loadAchievements()
+                completedAchievementIDs.formUnion(achievements.filter(\.isCompleted).map(\.identifier))
+            } catch {
+                print("[GameCenter] Loading achievements failed: \(error.localizedDescription)")
             }
         }
     }
