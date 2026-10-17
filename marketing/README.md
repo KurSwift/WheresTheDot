@@ -14,7 +14,9 @@ marketing/
 ```
 
 Locales match App Store Connect: `en` (English U.S.) and `es` (Spanish Mexico).
-Name exports by aspect ratio, e.g. `promo/product-page-header/es/21x9.png`.
+Name exports `last-dot-<asset>-<width>x<height>.png`, e.g.
+`promo/product-page-header/es/last-dot-app-store-header-5244x2950.png`. Artwork without text
+can be the same file in every locale.
 
 ## Specifications
 
