@@ -26,6 +26,7 @@ final class AppState: ObservableObject {
     }
 
     lazy var checkThemeUnlocks = CheckThemeUnlocksUseCase(repo: themeRepo)
+    lazy var recordBestScore = RecordBestScoreUseCase(repo: UserDefaultsScoreRepository())
 
     func isUnlocked(theme: Theme) -> Bool {
         if theme.isAlwaysUnlocked { return true }

@@ -31,5 +31,9 @@
 
     <key>theme_cosmos_milestone</key>
     <integer>350</integer>
+
+    <!-- Ads -->
+    <key>ad_frequency</key>
+    <integer>3</integer>
 </dict>
 </plist>
