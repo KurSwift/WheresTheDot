@@ -27,10 +27,10 @@ WheresTheDot/
 
 ### Layer Responsibilities
 
-- **Domain**: Immutable value types (`Dot`, `Round`, `GameSnapshot`, `Difficulty`, `Theme`), enums (`GameMode`, `RoundOutcome`, `ThemeID`), and protocols (`DotLayoutGenerating`, `GameSessionRepository`, `LevelProgression`, `ThemeRepository`, `RandomNumberGenerating`).
-- **Data**: Concrete implementations — `InMemoryGameSessionRepository`, `GKRandomAdapter` (wraps GameplayKit), `DotLayoutGenerator`, `SimpleArcadeProgression`, `UserDefaultsThemeRepository`.
-- **Use Cases**: Callable structs (`StartGameUseCase`, `AddDotIfCorrectUseCase`, `CheckThemeUnlocksUseCase`). Call with `useCase(args)` not `useCase.execute(args)`.
-- **Presentation**: `AppState` (navigation + settings + theme), `GameCoordinator` (game flow), `AppContainer` (DI root).
+- **Domain**: Immutable value types (`Dot`, `Round`, `GameSnapshot`, `Difficulty`, `Theme`, `DuelScore`), enums (`GameMode`, `RoundOutcome`, `ThemeID`, `DuelPlayer`), and protocols (`DotLayoutGenerating`, `GameSessionRepository`, `LevelProgression`, `ThemeRepository`, `ScoreRepository`, `RandomNumberGenerating`).
+- **Data**: Concrete implementations — `InMemoryGameSessionRepository`, `GKRandomAdapter` (wraps GameplayKit), `SimpleNewDotLayoutGenerator` (places each new dot, avoiding blocked rects), `SimpleArcadeProgression`, `UserDefaultsThemeRepository`, `UserDefaultsScoreRepository` (personal bests per mode).
+- **Use Cases**: Callable structs (`StartGameUseCase`, `AddDotIfCorrectUseCase`, `RelayoutDotsUseCase`, `CheckThemeUnlocksUseCase`, `RecordBestScoreUseCase`, `ResolveDuelTapUseCase`). Call with `useCase(args)` not `useCase.execute(args)`.
+- **Presentation**: `AppState` (navigation + settings + theme), `GameCoordinator` (game flow), `DuelCoordinator` + `DuelBoardLayout` (duel flow and screen halves), `AppContainer` (DI root).
 - **Tools**: `AudioManager` (singleton, background music), `Haptics` (enum with static methods), `FirebaseEventsManager` (analytics), `RemoteConfigManager` (remote config + local overrides), `GameCenterManager` (leaderboards + achievements), `StoreKitManager` (IAP, singleton), `AdsManager` (AdMob interstitials), `AdminConfig` (dev flag).
 
 ## Key Patterns
@@ -63,7 +63,8 @@ struct StartGameUseCase {
 
 ### SpriteKit ↔ SwiftUI Bridge
 - `GameScene` is embedded in SwiftUI via `SpriteView`
-- Scene communicates up via closures: `onDotTapped`, `onSceneReady`, `onTapFeedback`
+- Scene communicates up via closures: `onDotTapped`, `onDotTappedAt` (with touch location), `onSceneReady`, `onSizeChanged`, `onTapFeedback`
+- `scene.mirrorsBoard` (duel) draws every dot twice, mirrored through the center, and enables multi-touch
 - SwiftUI overlays (HUD, game-over sheet) sit on top of `SpriteView`
 - Theme is applied to the scene via `scene.themeColors`, `scene.themeGridColor`, `scene.themeBackgroundColor`, `scene.themeDotShape`
 - Setting `themeDotShape` to `.randomAssets` auto-resolves it to a specific `.asset` on first render
@@ -104,6 +105,17 @@ Protocol names use the `-ing` suffix: `DotLayoutGenerating`, `RandomNumberGenera
 - **Arcade**: Difficulty scales every N points (configurable via Remote Config `arcade_difficulty_step`). Radius shrinks, timing tightens, dot size variation increases.
 - **Daily**: Deterministic seed (in progress)
 - **Duel** (`AppRoute.duel`, `DuelView`): two players, one device. Not a `GameMode` (no leaderboards or best scores). The scene is split between two halves (`DuelBoardLayout`: top/bottom, left/right on wide windows or along the iPhone Duo fold); `GameScene.mirrorsBoard` draws player one's board a second time, mirrored through the center, for player two. `ResolveDuelTapUseCase`: first to tap the newest dot scores, a wrong dot scores for the rival, and the board grows by one dot either way. First to `duel_target_score` wins.
+
+## Adaptive Layout & iPhone Duo
+
+The app supports iPhone Duo (folding iPhone) and resizable iPad windows. **Building requires Xcode 27.1+** (local and Xcode Cloud): the iOS 27.1 `reservedRegions` APIs don't exist in older SDKs.
+
+- The scene size can change mid-game (fold/unfold, window resize). `GameScene.onSizeChanged` → `RelayoutDotsUseCase` maps the board proportionally into the new area, then re-renders. Never assume a fixed screen size.
+- `GameContainerView.playableRect(for:)` is the single source of truth for the classic/arcade play area; `DuelBoardLayout.playerOneArea` for duel.
+- `GameScene.reservedRects` (cameras + active fold, iOS 27.1+) is passed as `avoiding:` to every use case that places dots. `GameScene.foldFrame` gives the fold even when flat (duel splits along it).
+- `SpriteView` uses `.ignoresSafeArea(edges: .vertical)` only, so dots stay clear of the Duo's vertical system bar.
+- The Duo outer display is wide and short: keep menus fitting (e.g. the logo is capped with `containerRelativeFrame`).
+- The simulator can't fold from the command line; folding is manual in Device Hub.
 
 ## Theme System
 
@@ -256,7 +268,14 @@ Call `AdsManager.shared.recordGameOver()` on both wrong-tap and time-up game-ove
 - Framework: **Swift Testing** (`@Test`, `#expect`)
 - Tests live in `WheresTheDotTests/`
 - Domain logic (use cases, layout generators) should be unit-tested with injected fakes
-- UI tests in `WheresTheDotUITests/` (currently stubs)
+- Unit tests: `AdaptiveLayoutTests` (blocked regions, relayout), `DuelTests` (duel rules, halves), `RecordBestScoreUseCaseTests`
+- UI tests in `WheresTheDotUITests/`: `ScreenshotTests` drives App Store screenshots (see Release & App Store)
+- Run tests on the iPhone Duo simulator with Xcode 27.1, e.g. `DEVELOPER_DIR=/Applications/Xcode_27.1.app/Contents/Developer xcodebuild test …`. Use an isolated `-derivedDataPath` if the shared DerivedData throws Firebase modulemap errors.
+
+### Debug-only behavior
+- Firebase Analytics collection is disabled in Debug builds (`WheresTheDot.swift`), so simulator and screenshot runs don't pollute GA4.
+- `AdminConfig.isEnabled` is `true` only in Debug.
+- Screenshot launch arguments (`Tools/ScreenshotSetup.swift`, Debug only): `-screenshotMode` (premium simulated, ATT prompt skipped, arcade timer relaxed), `-screenshotTheme <themeID>`, `-screenshotDots <n>` (games and duels start with n dots).
 
 ## Routes
 
@@ -268,6 +287,17 @@ Call `AdsManager.shared.recordGameOver()` on both wrong-tap and time-up game-ove
 - `.themes`
 - `.store` — `PurchaseView` premium purchase sheet
 - `.admin` — only reachable when `AdminConfig.isEnabled == true`
+
+## Release & App Store
+
+- Pushing to a `release/X.Y` branch triggers an Xcode Cloud build (workflow set to Xcode 27.1). Cut or fast-forward it from `main`; fixes for a submitted version branch off `release/X.Y`.
+- Each shipped version gets a lightweight tag (`1.2`, `1.3`) and a GitHub Release "Release X.Y" with short bullet notes.
+- Feature work: branch from `main` → PR → the owner merges on GitHub. Every PR includes detailed manual verification steps.
+- Screenshots (generated, git-ignored, under `screenshots/<version>/<build>/<locale>/<device>/`):
+  - `./scripts/take_screenshots.sh` — iPhone Air, 17 Pro Max, 17, iPad Pro 13" in `en` and `es`.
+  - `./scripts/take_screenshots.sh -duo` — iPhone Duo outer display, pause to fold/unfold in Device Hub, then inner display (`iPhone_Duo_outer` / `iPhone_Duo_inner`).
+  - `swift scripts/frame_screenshots.swift <raw> <out> <en|es>` — marketing frames with captions; the `shots` array sets order and text.
+- Hand-made App Store artwork (product page header, search results creative, previews, Sketch sources) lives in `marketing/` (see `marketing/README.md` for Apple's specs). Sketch files and videos go through Git LFS.
 
 ## What to Avoid
 
@@ -282,3 +312,5 @@ Call `AdsManager.shared.recordGameOver()` on both wrong-tap and time-up game-ove
 - Do not gate premium themes on score milestones — use `StoreKitManager.shared.isPurchased(_:)` or `AppState.isUnlocked(theme:)`
 - Do not show ads without checking `StoreKitManager.shared.isAdFree` first
 - Do not hardcode IAP product IDs inline — reference the constants defined in `StoreKitManager`
+- Do not place dots without passing `scene.reservedRects` (cameras, fold) to the use case
+- Do not edit `CLAUDE.md` or `.agents/skills`: `CLAUDE.md` only imports `AGENTS.md`, and `.agents/skills` links to `.claude/skills`
