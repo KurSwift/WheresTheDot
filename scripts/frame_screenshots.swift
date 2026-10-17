@@ -111,8 +111,10 @@ for shot in shots {
     let sw = w * scale, sh = h * scale
     let phoneTop = max(y + h * 0.035, h * 0.22)
     let rect = NSRect(x: (w - sw) / 2, y: h - phoneTop - sh, width: sw, height: sh)
-    // iPad status bar sits closer to the corners, so it gets a tighter radius
-    let radius = sh * (h / w > 1.8 ? 0.05 : 0.02)
+    // iPad status bar sits closer to the corners, so it gets a tighter radius. iPhone Duo
+    // (long side 2034 outer, 2853 inner) is nearly as wide as an iPad but has phone corners.
+    let isPhone = h / w > 1.8 || [2034, 2853].contains(Int(max(w, h)))
+    let radius = sh * (isPhone ? 0.05 : 0.02)
     let path = NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius)
     NSGraphicsContext.saveGraphicsState()
     let phoneShadow = NSShadow()

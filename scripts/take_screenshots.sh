@@ -6,12 +6,15 @@
 # Usage:
 #   ./scripts/take_screenshots.sh            # all devices in parallel
 #   ./scripts/take_screenshots.sh -single    # pick one device interactively
+#   ./scripts/take_screenshots.sh -duo       # iPhone Duo: current display, then pauses so you
+#                                            # can fold/unfold it in Device Hub, then the other
 #
 # Output:
 #   screenshots/<version>/<build>/<locale>/<device>/<screen>.png
 #
 # Requirements:
-#   - Xcode command line tools (xcodebuild, xcrun)
+#   - Xcode 27.1 or newer (the app uses iPhone Duo APIs). If another Xcode is selected:
+#       DEVELOPER_DIR=/Applications/Xcode_27.1.app/Contents/Developer ./scripts/take_screenshots.sh
 #   - Run from the repo root: cd WheresTheDot && ./scripts/take_screenshots.sh
 # =============================================================================
 
@@ -54,9 +57,23 @@ ALL_SIMULATORS=(
 # -single mode: prompt the user to pick one device
 # =============================================================================
 
-SIMULATORS=("${ALL_SIMULATORS[@]}")
+# Captured by -duo only: the simulator can't fold from the command line, so it needs a pause
+DUO_SIMULATOR="iPhone Duo"
 
-if [ "${1:-}" = "-single" ]; then
+XCODE_VERSION=$(xcodebuild -version | awk 'NR == 1 {print $2}')
+if ! printf '27.1\n%s\n' "$XCODE_VERSION" | sort -V -C; then
+    echo "ERROR: Xcode $XCODE_VERSION is selected; the app needs Xcode 27.1 or newer. Run:"
+    echo "  DEVELOPER_DIR=/Applications/Xcode_27.1.app/Contents/Developer $0 $*"
+    exit 1
+fi
+
+SIMULATORS=("${ALL_SIMULATORS[@]}")
+DUO=0
+
+if [ "${1:-}" = "-duo" ]; then
+    SIMULATORS=("$DUO_SIMULATOR")
+    DUO=1
+elif [ "${1:-}" = "-single" ]; then
     echo "Select a simulator:"
     for i in "${!ALL_SIMULATORS[@]}"; do
         printf "  %d) %s\n" "$((i + 1))" "${ALL_SIMULATORS[$i]}"
@@ -215,16 +232,59 @@ export PROJECT SCHEME TEST_TARGET TEST_CLASS OUTPUT_DIR EXTRACT_SCRIPT
 
 # Devices run in parallel; locales run one after another so two test runs never share a simulator
 FAILED=0
-for LOCALE in "${LOCALES[@]}"; do
-    PIDS=()
-    for DEVICE in "${SIMULATORS[@]}"; do
-        run_combo "$LOCALE" "$DEVICE" &
-        PIDS+=($!)
+capture_all() {
+    for LOCALE in "${LOCALES[@]}"; do
+        PIDS=()
+        for DEVICE in "${SIMULATORS[@]}"; do
+            run_combo "$LOCALE" "$DEVICE" &
+            PIDS+=($!)
+        done
+        for PID in "${PIDS[@]}"; do
+            wait "$PID" || FAILED=$((FAILED + 1))
+        done
     done
-    for PID in "${PIDS[@]}"; do
-        wait "$PID" || FAILED=$((FAILED + 1))
+}
+
+# iPhone Duo: name the folder after the display that was captured. Outer display is
+# 1398x2034, inner 2007x2853 (either orientation), so the long side tells them apart.
+DUO_DISPLAYS=()
+label_duo_display() {
+    local DISPLAY=""
+    for LOCALE in "${LOCALES[@]}"; do
+        local DIR="$OUTPUT_DIR/$LOCALE/iPhone_Duo"
+        local PNG
+        PNG=$(find "$DIR" -name "*.png" 2>/dev/null | head -1)
+        [ -z "$PNG" ] && continue
+        local W H
+        W=$(sips -g pixelWidth "$PNG" | awk '/pixelWidth/ {print $2}')
+        H=$(sips -g pixelHeight "$PNG" | awk '/pixelHeight/ {print $2}')
+        DISPLAY=outer
+        [ $(( W > H ? W : H )) -gt 2500 ] && DISPLAY=inner
+        rm -rf "${DIR}_$DISPLAY"
+        mv "$DIR" "${DIR}_$DISPLAY"
+        echo "  ✓ [$LOCALE] iPhone Duo $DISPLAY display → ${DIR}_$DISPLAY"
     done
-done
+    DUO_DISPLAYS+=("$DISPLAY")
+}
+
+if [ "$DUO" = 1 ]; then
+    for PASS in 1 2; do
+        for LOCALE in "${LOCALES[@]}"; do rm -rf "$OUTPUT_DIR/$LOCALE/iPhone_Duo"; done
+        capture_all
+        label_duo_display
+        [ "$PASS" = 2 ] && break
+        echo ""
+        echo "Now fold or unfold the iPhone Duo in Device Hub (Window ▸ Device Hub in Xcode)."
+        printf "Press Enter to capture the other display, or type s + Enter to stop here: "
+        read -r REPLY
+        [ "$REPLY" = "s" ] && break
+    done
+    if [ "${#DUO_DISPLAYS[@]}" = 2 ] && [ "${DUO_DISPLAYS[0]}" = "${DUO_DISPLAYS[1]}" ]; then
+        warn "Both passes captured the ${DUO_DISPLAYS[0]} display — the device wasn't folded/unfolded in between."
+    fi
+else
+    capture_all
+fi
 
 echo ""
 
