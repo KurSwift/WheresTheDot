@@ -19,6 +19,7 @@ final class AppContainer: ObservableObject {
     // Use cases
     let startGame: StartGameUseCase
     let addDotIfCorrect: AddDotIfCorrectUseCase
+    let relayoutDots: RelayoutDotsUseCase
 
     // Exposed so GameCoordinator can read time limits per level
     let progression: LevelProgression?
@@ -49,5 +50,6 @@ final class AppContainer: ObservableObject {
 
         self.startGame = StartGameUseCase(repo: repo, layout: layout)
         self.addDotIfCorrect = AddDotIfCorrectUseCase(repo: repo, layout: layout, progression: progression)
+        self.relayoutDots = RelayoutDotsUseCase(repo: repo, layout: layout)
     }
 }

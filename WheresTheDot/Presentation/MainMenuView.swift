@@ -36,6 +36,8 @@ struct MainMenuView: View {
         Image("AppTitle")
             .resizable()
             .aspectRatio(contentMode: .fit)
+            // Cap the logo so wide, short windows (iPhone Duo outer display) keep the buttons on screen
+            .containerRelativeFrame(.vertical, alignment: .center) { height, _ in height * 0.3 }
     }
 
     private var menuButtons: some View {

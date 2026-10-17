@@ -4,6 +4,8 @@ final class GameScene: SKScene {
     
     private var tapSoundAction: SKAction = .playSoundFileNamed("pulse.wav", waitForCompletion: false)
     var onSceneReady: ((CGSize) -> Void)?
+    /// Called when the scene is resized after it became ready (iPhone Duo fold/unfold, iPad resize).
+    var onSizeChanged: ((_ oldSize: CGSize, _ newSize: CGSize) -> Void)?
     var onDotTapped: ((UUID) -> Void)?
     var onTapFeedback: (() -> Void)?
 
@@ -162,7 +164,23 @@ final class GameScene: SKScene {
 
     override func didChangeSize(_ oldSize: CGSize) {
         super.didChangeSize(oldSize)
+        if didNotifyReady, oldSize != size, size != .zero {
+            rebuildGrid()
+            onSizeChanged?(oldSize, size)
+        }
         notifyReadyIfNeeded()
+    }
+
+    /// Camera cutouts and an active fold, in scene coordinates. Dots must not be placed there:
+    /// touches are suppressed over cameras, and a dot on a partly folded crease is hard to hit.
+    var reservedRects: [CGRect] {
+        guard #available(iOS 27.1, *), let view else { return [] }
+        let regions = view.reservedRegions(kind: .occlusion) + view.reservedRegions(kind: .division)
+        return regions.filter(\.isActive).map { region in
+            let a = convertPoint(fromView: CGPoint(x: region.frame.minX, y: region.frame.minY))
+            let b = convertPoint(fromView: CGPoint(x: region.frame.maxX, y: region.frame.maxY))
+            return CGRect(x: min(a.x, b.x), y: min(a.y, b.y), width: abs(a.x - b.x), height: abs(a.y - b.y))
+        }
     }
 
     private func notifyReadyIfNeeded() {

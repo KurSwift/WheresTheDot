@@ -21,7 +21,8 @@ final class SimpleNewDotLayoutGenerator: DotLayoutGenerating {
         existing: [CGPoint],
         in area: CGRect,
         radius: CGFloat,
-        minDistance: CGFloat
+        minDistance: CGFloat,
+        avoiding blocked: [CGRect]
     ) -> CGPoint? {
         let xmin = Int(area.minX + radius)
         let xmax = Int(area.maxX - radius)
@@ -30,7 +31,11 @@ final class SimpleNewDotLayoutGenerator: DotLayoutGenerating {
 
         guard xmin < xmax, ymin < ymax else { return nil }
 
+        // A dot must sit fully outside blocked regions (camera cutouts, fold)
+        let blockedZones = blocked.map { $0.insetBy(dx: -radius, dy: -radius) }
+
         func ok(_ p: CGPoint) -> Bool {
+            if blockedZones.contains(where: { $0.contains(p) }) { return false }
             for q in existing {
                 let dx = p.x - q.x
                 let dy = p.y - q.y

@@ -40,7 +40,15 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     #if canImport(GoogleMobileAds)
     Task { @MainActor in
         try? await Task.sleep(nanoseconds: 1_000_000_000)
-        await ATTrackingManager.requestTrackingAuthorization()
+        #if DEBUG
+        // The tracking prompt would cover the UI in screenshot automation
+        let skipTrackingPrompt = CommandLine.arguments.contains("-screenshotMode")
+        #else
+        let skipTrackingPrompt = false
+        #endif
+        if !skipTrackingPrompt {
+            await ATTrackingManager.requestTrackingAuthorization()
+        }
         await MobileAds.initialize()
         AdsManager.shared.start()
     }

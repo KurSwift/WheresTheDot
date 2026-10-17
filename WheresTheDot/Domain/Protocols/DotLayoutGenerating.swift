@@ -13,6 +13,7 @@ protocol DotLayoutGenerating {
         existing: [CGPoint],
         in area: CGRect,
         radius: CGFloat,
-        minDistance: CGFloat
+        minDistance: CGFloat,
+        avoiding blocked: [CGRect]
     ) -> CGPoint?
 }

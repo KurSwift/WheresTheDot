@@ -61,6 +61,7 @@ struct GameContainerView: View {
             mode: mode,
             start: container.startGame,
             addIfCorrect: container.addDotIfCorrect,
+            relayout: container.relayoutDots,
             progression: container.progression
         ))
     }
@@ -73,7 +74,10 @@ struct GameContainerView: View {
             // =========================
             if let scene {
                 SpriteView(scene: scene)
-                    .ignoresSafeArea()
+                    // Full height, but stay clear of side bars (iPhone Duo outer display's
+                    // vertical system bar) so no dot ends up under them
+                    .ignoresSafeArea(edges: .vertical)
+                    .background(appState.currentTheme.backgroundColor.ignoresSafeArea())
             } else {
                 ProgressView()
                     .task { setup() }
@@ -265,18 +269,23 @@ private extension GameContainerView {
 
     // MARK: - HUD
 
+    /// Area where dots may be placed, leaving room for the HUD at the top and bottom.
+    private static func playableRect(for sceneSize: CGSize) -> CGRect {
+        CGRect(origin: .zero, size: sceneSize).insetBy(dx: 30, dy: 120)
+    }
+
     @MainActor
     private func restartGame() {
         guard let scene else { return }
 
-        let area = CGRect(origin: .zero, size: scene.size).insetBy(dx: 30, dy: 120)
+        let area = Self.playableRect(for: scene.size)
 
         scene.cancelRoundTimer()
         scene.clearOverlays()
         timerBarStart = nil
         gameOverVisible = false
 
-        let firstRound = coordinator.startGame(in: area)
+        let firstRound = coordinator.startGame(in: area, avoiding: scene.reservedRects)
         let animDuration = scene.render(round: firstRound)
         coordinator.message = ""
 
@@ -556,10 +565,7 @@ private extension GameContainerView {
         scene.themeGridColor = UIColor(appState.currentTheme.gridColor)
         scene.themeBackgroundColor = UIColor(appState.currentTheme.backgroundColor)
 
-        func playableRect(for sceneSize: CGSize) -> CGRect {
-            CGRect(origin: .zero, size: sceneSize)
-                .insetBy(dx: 30, dy: 120)
-        }
+        let playableRect = Self.playableRect
 
         func startArcadeTimer(limit: TimeInterval) {
             timerBarStart = Date()
@@ -571,8 +577,8 @@ private extension GameContainerView {
         }
 
         scene.onSceneReady = { size in
-            let area = playableRect(for: size)
-            let firstRound = coordinator.startGame(in: area)
+            let area = playableRect(size)
+            let firstRound = coordinator.startGame(in: area, avoiding: scene.reservedRects)
             let animDuration = scene.render(round: firstRound)
 
             Task { @MainActor in
@@ -592,6 +598,16 @@ private extension GameContainerView {
                 }
                 scene.setInputEnabled(true)
             }
+        }
+
+        // Fold/unfold or window resize mid-game: re-fit the board instead of leaving dots off-screen
+        scene.onSizeChanged = { oldSize, newSize in
+            guard let round = coordinator.relayoutBoard(
+                from: playableRect(oldSize),
+                to: playableRect(newSize),
+                avoiding: scene.reservedRects
+            ) else { return }
+            scene.render(round: round)
         }
 
         if appState.hapticsEnabled {
@@ -614,8 +630,8 @@ private extension GameContainerView {
             scene.cancelRoundTimer()
             timerBarStart = nil
 
-            let area = playableRect(for: scene.size)
-            let outcome = coordinator.handleTap(tappedID, in: area)
+            let area = playableRect(scene.size)
+            let outcome = coordinator.handleTap(tappedID, in: area, avoiding: scene.reservedRects)
 
             switch outcome {
             case .correct(let nextRound):
@@ -736,7 +752,7 @@ private extension GameContainerView {
         scene.setInputEnabled(false)
 
         let area = playableRect(scene.size)
-        let outcome = coordinator.handleTap(tappedID, in: area)
+        let outcome = coordinator.handleTap(tappedID, in: area, avoiding: scene.reservedRects)
 
         switch outcome {
         case .correct(let nextRound):
