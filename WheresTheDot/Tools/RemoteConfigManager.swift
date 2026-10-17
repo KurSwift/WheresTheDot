@@ -82,12 +82,14 @@ final class RemoteConfigManager {
         static let oceanMilestone        = "theme_ocean_milestone"
         static let cosmosMilestone       = "theme_cosmos_milestone"
         static let adFrequency           = "ad_frequency"
+        static let duelModeEnabled       = "duel_mode_enabled"
+        static let duelTargetScore       = "duel_target_score"
 
         static let all: [String] = [
             arcadeTimeLimitBase, arcadeDifficultyStep, memoryCoverDuration,
             onboardingEnabled, arcadeModeEnabled, defaultTheme,
             forestMilestone, oceanMilestone, cosmosMilestone,
-            adFrequency
+            adFrequency, duelModeEnabled, duelTargetScore
         ]
     }
 
@@ -110,6 +112,12 @@ final class RemoteConfigManager {
 
     /// Game-overs between interstitial ads. Default: 3.
     var adFrequency: Int { int(Keys.adFrequency) }
+
+    /// Whether duel (two players, one device) is available in the main menu. Default: true.
+    var duelModeEnabled: Bool { bool(Keys.duelModeEnabled) }
+
+    /// Points needed to win a duel. Default: 10.
+    var duelTargetScore: Int { max(1, int(Keys.duelTargetScore)) }
 
     /// ThemeID used for first-time users before they pick a theme. Default: "neon".
     var defaultTheme: ThemeID {

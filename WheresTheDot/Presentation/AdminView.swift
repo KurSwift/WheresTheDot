@@ -23,6 +23,7 @@ struct AdminView: View {
     // Flags
     @State private var onboardingEnabled: Bool = true
     @State private var arcadeModeEnabled: Bool = true
+    @State private var duelModeEnabled: Bool = true
 
     // IAP simulation
     @State private var simulatePremium: Bool = false
@@ -126,6 +127,13 @@ struct AdminView: View {
                 Toggle("Arcade mode enabled", isOn: $arcadeModeEnabled)
                     .onChange(of: arcadeModeEnabled) { _, v in
                         rc.setOverride(v, forKey: RemoteConfigManager.Keys.arcadeModeEnabled)
+                    }
+            }
+
+            overrideRow(key: RemoteConfigManager.Keys.duelModeEnabled) {
+                Toggle("Duel mode enabled", isOn: $duelModeEnabled)
+                    .onChange(of: duelModeEnabled) { _, v in
+                        rc.setOverride(v, forKey: RemoteConfigManager.Keys.duelModeEnabled)
                     }
             }
         } header: {
@@ -253,6 +261,7 @@ struct AdminView: View {
         memoryCoverDuration  = rc.memoryCoverDuration
         onboardingEnabled    = rc.onboardingEnabled
         arcadeModeEnabled    = rc.arcadeModeEnabled
+        duelModeEnabled      = rc.duelModeEnabled
         defaultTheme         = rc.defaultTheme
         forestMilestone      = rc.milestone(for: .forest) ?? 50
         oceanMilestone       = rc.milestone(for: .ocean) ?? 150

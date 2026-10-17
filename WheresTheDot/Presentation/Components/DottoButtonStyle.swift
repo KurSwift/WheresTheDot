@@ -10,7 +10,7 @@ import SwiftUI
 
 struct DottoButtonStyle: ButtonStyle {
     enum Kind {
-        case classic, arcade, options
+        case classic, arcade, duel, options
     }
     
     let kind: Kind
@@ -47,6 +47,10 @@ struct DottoButtonStyle: ButtonStyle {
                 return LinearGradient(colors: [.neonOrange.opacity(0.85), .neonOrange.opacity(0.65)],
                                       startPoint: .topLeading, endPoint: .bottomTrailing)
 
+            case .duel:
+                return LinearGradient(colors: [.neonPink.opacity(0.85), .neonPurple.opacity(0.75)],
+                                      startPoint: .topLeading, endPoint: .bottomTrailing)
+
             case .options:
                 return LinearGradient(colors: [.neonPurple.opacity(0.85), .neonPurple.opacity(0.65)],
                                       startPoint: .topLeading, endPoint: .bottomTrailing)
@@ -57,6 +61,7 @@ struct DottoButtonStyle: ButtonStyle {
             switch kind {
             case .arcade:    return .neonOrange
             case .classic:   return .neonCyan
+            case .duel:      return .neonPink
             case .options:   return .neonPurple
             }
         }

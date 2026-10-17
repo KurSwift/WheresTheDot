@@ -57,6 +57,10 @@ final class AppState: ObservableObject {
         route = .game(mode)
     }
 
+    func startDuel() {
+        route = .duel
+    }
+
     func openSettings() {
         route = .settings
     }
@@ -77,7 +81,9 @@ final class AppState: ObservableObject {
     // MARK: - Helpers
 
     var isInGame: Bool {
-        if case .game = route { return true }
-        return false
+        switch route {
+        case .game, .duel: return true
+        default: return false
+        }
     }
 }

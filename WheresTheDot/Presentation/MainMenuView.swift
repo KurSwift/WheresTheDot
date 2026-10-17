@@ -75,6 +75,26 @@ struct MainMenuView: View {
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
             }
+
+            if RemoteConfigManager.shared.duelModeEnabled {
+                Button {
+                    FirebaseEventsManager.logDuelSelected()
+                    appState.startDuel()
+                } label: {
+                    HStack(spacing: 0) {
+                        Text("Duel Mode")
+                            .bold()
+                            .padding()
+                        Image(systemName: "person.2.fill")
+                            .bold()
+                            .padding()
+                    }
+                }
+                .accessibilityIdentifier("btn_duel_mode")
+                .buttonStyle(DottoButtonStyle(kind: .duel))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+            }
             Spacer()
             utilityRow
                 .padding(.horizontal, 10)
