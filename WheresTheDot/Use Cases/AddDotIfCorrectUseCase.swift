@@ -18,7 +18,7 @@ struct AddDotIfCorrectUseCase {
     let layout: DotLayoutGenerating
     var progression: LevelProgression? = nil
 
-    func callAsFunction(tapped id: UUID, in area: CGRect) -> TapOutcome {
+    func callAsFunction(tapped id: UUID, in area: CGRect, avoiding blocked: [CGRect] = []) -> TapOutcome {
         var snap = repo.load()
 
         let baseRadius = snap.radius
@@ -43,7 +43,8 @@ struct AddDotIfCorrectUseCase {
             existing: existingPositions,
             in: area,
             radius: newRadius,       // use actual radius for correct bounds inset
-            minDistance: snap.minDistance
+            minDistance: snap.minDistance,
+            avoiding: blocked
         ) ?? CGPoint(x: area.midX, y: area.midY)
 
         let newDot = Dot(id: UUID(), position: newPos, radius: newRadius)

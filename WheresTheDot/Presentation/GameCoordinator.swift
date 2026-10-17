@@ -23,24 +23,27 @@ final class GameCoordinator: ObservableObject {
     let mode: GameMode
     let start: StartGameUseCase
     private let addIfCorrect: AddDotIfCorrectUseCase
+    private let relayout: RelayoutDotsUseCase
     private let progression: LevelProgression?
     private var gameStartedAt: Date?
 
     init(mode: GameMode = .classic,
          start: StartGameUseCase,
          addIfCorrect: AddDotIfCorrectUseCase,
+         relayout: RelayoutDotsUseCase,
          progression: LevelProgression? = nil) {
         self.mode = mode
         self.start = start
         self.addIfCorrect = addIfCorrect
+        self.relayout = relayout
         self.progression = progression
     }
 
-    func startGame(in area: CGRect) -> Round {
-        var round = start(in: area)
+    func startGame(in area: CGRect, avoiding blocked: [CGRect] = []) -> Round {
+        var round = start(in: area, avoiding: blocked)
         #if DEBUG
         for _ in 1..<ScreenshotSetup.prefilledDots {
-            if case .correct(let next) = addIfCorrect(tapped: round.newDotID, in: area) { round = next }
+            if case .correct(let next) = addIfCorrect(tapped: round.newDotID, in: area, avoiding: blocked) { round = next }
         }
         #endif
         roundIndex = round.index
@@ -55,8 +58,8 @@ final class GameCoordinator: ObservableObject {
         return round
     }
 
-    func handleTap(_ id: UUID, in area: CGRect) -> TapOutcome {
-        let outcome = addIfCorrect(tapped: id, in: area)
+    func handleTap(_ id: UUID, in area: CGRect, avoiding blocked: [CGRect] = []) -> TapOutcome {
+        let outcome = addIfCorrect(tapped: id, in: area, avoiding: blocked)
         switch outcome {
         case .correct(let nextRound):
             let newScore = nextRound.dots.count
@@ -78,6 +81,11 @@ final class GameCoordinator: ObservableObject {
             finishGame(message: "Game Over")
         }
         return outcome
+    }
+
+    /// Re-fits the current board after the window changes size (fold/unfold, iPad resize).
+    func relayoutBoard(from old: CGRect, to new: CGRect, avoiding blocked: [CGRect] = []) -> Round? {
+        relayout(from: old, to: new, avoiding: blocked)
     }
 
     /// Arcade timer ran out: ends the game with the current score.

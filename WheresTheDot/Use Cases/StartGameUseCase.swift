@@ -12,7 +12,7 @@ struct StartGameUseCase {
     let repo: GameSessionRepository
     let layout: DotLayoutGenerating
 
-    func callAsFunction(in area: CGRect) -> Round {
+    func callAsFunction(in area: CGRect, avoiding blocked: [CGRect] = []) -> Round {
         let radius: CGFloat = 18
         let minDistance: CGFloat = 44
 
@@ -20,7 +20,8 @@ struct StartGameUseCase {
             existing: [],
             in: area,
             radius: radius,
-            minDistance: minDistance
+            minDistance: minDistance,
+            avoiding: blocked
         ) ?? CGPoint(x: area.midX, y: area.midY)
 
         let firstDot = Dot(id: UUID(), position: firstPos, radius: radius)
