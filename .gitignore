@@ -75,3 +75,6 @@ GoogleService-Info.plist
 
 # Claude Code
 .claude/worktrees/
+
+# Claude Code local permissions
+.claude/settings.local.json
