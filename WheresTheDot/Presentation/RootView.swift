@@ -32,5 +32,11 @@ struct RootView: View {
             }
         }
         .environmentObject(appState)
+        // lastdot://duel — deep link for the App Store "Duel Week" in-app event
+        .onOpenURL { url in
+            guard url.host == "duel", RemoteConfigManager.shared.duelModeEnabled else { return }
+            FirebaseEventsManager.logDuelSelected()
+            appState.startDuel()
+        }
     }
 }
