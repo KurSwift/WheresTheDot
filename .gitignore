@@ -21,7 +21,7 @@ xcuserdata/
 # Swift Package Manager
 .swiftpm/
 Packages/
-Package.resolved
+# Package.resolved is tracked: Xcode Cloud needs it to resolve packages
 
 # CocoaPods (not used, but just in case)
 Pods/
